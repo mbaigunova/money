@@ -51,10 +51,10 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* wallets */
 .wallets{display:flex;gap:10px;overflow-x:auto;padding:4px 20px 10px;scroll-snap-type:x proximity;scrollbar-width:none;scroll-padding:0 20px}
 .wallets::-webkit-scrollbar,.cats::-webkit-scrollbar,.chips::-webkit-scrollbar{display:none}
-.wcard{flex:0 0 150px;height:106px;border-radius:20px;padding:12px 14px;color:#fff;background:var(--c);display:flex;flex-direction:column;justify-content:space-between;scroll-snap-align:start;border:0;text-align:left;position:relative;overflow:hidden;transition:opacity .2s,transform .2s}
+.wcard{flex:0 0 136px;height:106px;border-radius:20px;padding:12px 14px;color:#fff;background:var(--c);display:flex;flex-direction:column;justify-content:space-between;scroll-snap-align:start;border:0;text-align:left;position:relative;overflow:hidden;transition:opacity .2s,transform .2s}
 .wcard::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;right:-46px;top:-52px;background:rgba(255,255,255,.14);pointer-events:none}
 .wcard::before{content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-18px;bottom:-34px;background:rgba(0,0,0,.08);pointer-events:none}
-.wcard .w-emoji{font-size:24px;line-height:1;position:relative;z-index:1}
+.wcard .w-emoji{font-size:18px;line-height:1;position:relative;z-index:1}
 .wcard .w-name{font-size:13px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}
 .wcard .w-bal{font:600 16px/1.2 var(--num);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}
 .wallets.filtering .wcard{opacity:.45}
@@ -191,7 +191,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 .hero-saved{margin-top:8px;font-size:14px;color:var(--muted)}
 .hero-saved b{font:600 16px var(--num);color:var(--ink);margin-left:4px}
 .wallets{padding-top:14px!important}
-.wcard{height:114px}
+.wcard{height:108px}
 .wcard .w-small{display:block;font-size:11px;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1;margin-top:1px}
 .wcard.stack{margin-right:10px;overflow:visible;box-shadow:5px -5px 0 -1px var(--c2),10px -10px 0 -2px var(--c3)}
 .wcard.stack::after,.wcard.stack::before{display:none}
@@ -235,6 +235,29 @@ button{font:inherit;color:inherit;cursor:pointer}
 .debt-note{margin:10px 0 0;font-size:14px}
 .dates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
 .dates .input{width:100%}
+.limit-hint{margin:8px 2px 0;font-size:13px;color:var(--muted)}
+.limit-hint.over,.over{color:var(--expense)}
+.lbl-sub{opacity:.7;font-size:12px;margin-left:4px}
+.chip.tag{--c:var(--accent);padding:6px 12px;font-size:14px}
+.chip.tag.on{background:var(--accent);color:var(--on-accent);border-color:var(--accent)}
+.chip.tag.add{border-style:dashed;color:var(--accent)}
+.tag-add{display:flex;gap:8px;margin-top:8px}
+.tag-add button{border:0;border-radius:12px;background:var(--accent);color:var(--on-accent);font:600 15px var(--text);padding:0 16px;flex:none}
+.crow-btn{width:100%;border:0;background:none;text-align:left;padding:9px 0}
+.tag-count{font:500 12px var(--text);color:var(--accent);margin-left:6px}
+.tag-break{margin:-2px 0 8px 52px;padding:8px 12px;background:var(--surface-2);border-radius:12px;font-size:14px}
+.tag-break div{display:flex;justify-content:space-between;padding:3px 0}
+.tag-break b{font:600 13px var(--num)}
+.tag-break .muted-row{color:var(--muted)}
+[data-long]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
+.wcard.holding{transform:scale(.95)!important;transition:transform .45s ease}
+.row.holding{background:var(--surface-2);transition:background .45s}
+.filter-bar{display:flex;align-items:center;gap:10px;margin:4px 12px 0;padding:10px 10px 10px 12px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);border-left:4px solid var(--c)}
+.fb-dot{font-size:18px;line-height:1}
+.fb-txt{flex:1;min-width:0;font-size:14px}
+.fb-txt b{font-weight:600}
+.fb-txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
+.filter-bar button{width:34px;height:34px;border:0;border-radius:50%;background:var(--surface-2);color:var(--muted);font-size:15px;flex:none}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -259,7 +282,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 /* ===== Константы ===== */
 // Версия приложения: меняется с каждым обновлением
-const APP_VERSION = '2.0';
+const APP_VERSION = '2.2';
 const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
@@ -305,17 +328,20 @@ function dayLabel(ds) {
 function seed() {
   const c = (name, icon, color, type) => ({ id: uid(), name, icon, color, type });
   return {
-    version: 3, base: 'KZT', lastWallet: null, lastBackup: null,
+    version: 4, base: 'KZT', lastWallet: null, lastBackup: null,
     wallets: [
       { id: uid(), name: 'Kaspi Gold', icon: '💳', color: '#C92A2A', currency: 'KZT', initial: 0, group: 'Kaspi', savings: false },
-      { id: uid(), name: 'Наличные', icon: '💵', color: '#1F8656', currency: 'KZT', initial: 0, group: '', savings: false },
+      { id: uid(), name: 'Фридом', icon: '🏦', color: '#1F8656', currency: 'KZT', initial: 0, group: '', savings: false },
+      { id: uid(), name: 'Депозит', icon: '🐷', color: '#A67C00', currency: 'KZT', initial: 0, group: '', savings: true },
+      { id: uid(), name: 'Наличные', icon: '💵', color: '#2B3A4A', currency: 'KZT', initial: 0, group: '', savings: false },
     ],
     categories: [
       c('Продукты','🛒','#1F8656','expense'), c('Кафе и рестораны','🍽️','#E8590C','expense'),
       c('Транспорт','🚕','#A67C00','expense'), c('Дом и коммуналка','🏠','#1971C2','expense'),
       c('Связь и интернет','📱','#3B5BDB','expense'), c('Здоровье','💊','#C92A2A','expense'),
       c('Одежда','👗','#C2255C','expense'), c('Красота','💅','#9C36B5','expense'),
-      c('Развлечения','🎬','#7048E8','expense'), c('Подписки','🔁','#0B8FA3','expense'),
+      c('Развлечения','🎬','#7048E8','expense'), c('Путешествия','✈️','#1971C2','expense'),
+      c('Подписки','🔁','#0B8FA3','expense'),
       c('Образование','📚','#5C940D','expense'), c('Подарки','🎁','#C2255C','expense'),
       c('Другое','📦','#2B3A4A','expense'),
       c('Зарплата','💼','#1F8656','income'), c('Подработка','💰','#0B8FA3','income'),
@@ -337,7 +363,14 @@ function migrate(d) {
   }
   d.wallets.forEach(w => { if (w.group == null) w.group = ''; w.savings = !!w.savings; });
   if (!Array.isArray(d.debts)) d.debts = [];
-  if (d.version < 3) d.version = 3;
+  if (d.version < 4) {
+    if (!d.categories.some(c => c.type === 'expense' && c.name === 'Путешествия')) {
+      const cat = { id: uid(), name: 'Путешествия', icon: '✈️', color: '#1971C2', type: 'expense' };
+      const i = d.categories.findIndex(c => c.type === 'expense' && c.name === 'Другое');
+      if (i >= 0) d.categories.splice(i, 0, cat); else d.categories.push(cat);
+    }
+    d.version = 4;
+  }
   return d;
 }
 function load() {
@@ -378,11 +411,21 @@ function units() {
   S.wallets.forEach(w => { const g = gname(w); if (g && isGroup(g)) { if (!seen[g]) { seen[g] = 1; out.push({ group: g, ws: groupMembers(g) }); } } else out.push({ w }); });
   return out;
 }
+const normTag = s => String(s || '').replace(/^#+/, '').trim().replace(/\s+/g, ' ').slice(0, 20);
+function catTags(catId) {
+  const cnt = {};
+  S.tx.forEach(t => { if (t.categoryId === catId && t.tags) t.tags.forEach(g => cnt[g] = (cnt[g] || 0) + 1); });
+  return Object.keys(cnt).sort((a, b) => cnt[b] - cnt[a]);
+}
+const tagLine = t => (t.tags && t.tags.length) ? t.tags.map(g => '#' + g).join(' ') : '';
+function catSpent(catId, ym, exceptId) {
+  return S.tx.filter(t => t.type === 'expense' && t.categoryId === catId && t.date.startsWith(ym) && t.id !== exceptId && inBase(t)).reduce((s, t) => s + t.amount, 0);
+}
 const sortTx = (a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0));
 
 /* ===== Главная ===== */
 function walletCard(w, balance, extra = '') {
-  return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}">
+  return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
     <span class="w-emoji">${esc(w.icon)}</span>
     <span><span class="w-name" style="display:block">${esc(w.name || 'Кошелёк')}</span>
     <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span>${w.savings ? '<span class="w-small">Накопления</span>' : ''}</span>
@@ -420,7 +463,7 @@ function txRow(t) {
       <span class="amt transfer">${amt}</span></button>`;
   }
   const c = getC(t.categoryId);
-  const sub = [t.note, ui.wallet ? '' : (w ? w.name : '')].filter(Boolean).map(esc).join(', ');
+  const sub = [tagLine(t), t.note, ui.wallet ? '' : (w ? w.name : '')].filter(Boolean).map(esc).join(', ');
   return `<button class="row" data-action="open-tx" data-id="${t.id}">${ico(c.icon, c.color)}
     <span class="row-main"><span class="row-title" style="display:block">${esc(c.name)}</span>
     ${sub ? `<span class="row-sub" style="display:block">${sub}</span>` : ''}</span>
@@ -451,7 +494,7 @@ function renderHome() {
   if (ui.group) {
     const ws = groupMembers(ui.group);
     h += `<div class="gpanel"><div class="gpanel-head"><b>${esc(ui.group)}</b><button class="link-btn" data-action="close-group">Свернуть</button></div>
-      <div class="list">${ws.map(w => `<button class="row${ui.wallet === w.id ? ' sel' : ''}" data-action="filter" data-id="${w.id}">
+      <div class="list">${ws.map(w => `<button class="row${ui.wallet === w.id ? ' sel' : ''}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
         <span class="ico" style="background:${w.color}">${esc(w.icon)}</span>
         <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span>${w.savings ? '<span class="row-sub" style="display:block">Накопления</span>' : ''}</span>
         <span class="amt">${bal(b[w.id], w.currency)}</span></button>`).join('')}</div></div>`;
@@ -470,8 +513,11 @@ function renderHome() {
   const fw = ui.wallet && getW(ui.wallet);
   const ids = fw ? [fw.id] : ui.group ? groupMembers(ui.group).map(w => w.id) : null;
   let list = S.tx.filter(t => !(t.type === 'debt' && !t.walletId) && (!ids || ids.includes(t.walletId) || ids.includes(t.toWalletId))).sort(sortTx);
-  h += `<div class="sec-head"><h2>${fw ? esc(fw.name) : ui.group ? 'Операции: ' + esc(ui.group) : 'Операции'}</h2>
-    ${fw ? `<span><button class="link-btn" data-action="edit-wallet" data-id="${fw.id}">Изменить</button>&nbsp;&nbsp;<button class="link-btn" data-action="show-all">Все</button></span>` : ui.group ? '<button class="link-btn" data-action="close-group">Все</button>' : ''}</div>`;
+  if (fw) h += `<div class="filter-bar" style="--c:${fw.color}"><span class="fb-dot">${esc(fw.icon)}</span>
+      <span class="fb-txt">Показаны операции: <b>${esc(fw.name)}</b><small>Удерживайте карточку, чтобы изменить кошелёк</small></span>
+      <button data-action="show-all" aria-label="Показать все операции">✕</button></div>`;
+  h += `<div class="sec-head"><h2>${fw ? 'Операции' : ui.group ? 'Операции: ' + esc(ui.group) : 'Операции'}</h2>
+    ${!fw && ui.group ? '<button class="link-btn" data-action="close-group">Все</button>' : ''}</div>`;
 
   if (!S.wallets.length) {
     h += `<div class="empty"><div class="big">👛</div><p>Создайте первый кошелёк: карту, наличные или накопления.</p><button class="primary inline" data-action="add-wallet">Создать кошелёк</button></div>`;
@@ -518,7 +564,7 @@ function renderStats() {
   const net = inc - exp;
   const groups = {};
   S.tx.filter(t => t.type === ui.stype && t.date.startsWith(ym) && inBase(t)).forEach(t => {
-    const k = t.categoryId || '_'; (groups[k] = groups[k] || { c: getC(t.categoryId), sum: 0, n: 0 }); groups[k].sum += t.amount; groups[k].n++;
+    const k = t.categoryId || '_'; (groups[k] = groups[k] || { c: getC(t.categoryId), sum: 0, n: 0, txs: [] }); groups[k].txs.push(t); groups[k].sum += t.amount; groups[k].n++;
   });
   const items = Object.values(groups).sort((a, b) => b.sum - a.sum);
   const total = ui.stype === 'expense' ? exp : inc;
@@ -550,13 +596,29 @@ function renderStats() {
   </div>
   <div class="card">${donut(items, total)}${cmp ? `<p class="compare">${cmp}</p>` : ''}</div>`;
 
+  const limited = ui.stype === 'expense' ? S.categories.filter(c => c.type === 'expense' && c.limit > 0) : [];
+  if (limited.length) {
+    h += `<div class="card"><h3>Лимиты</h3>${limited.map(c => {
+      const sp = catSpent(c.id, ym), p = sp / c.limit * 100, over = sp > c.limit;
+      return `<div class="crow">${ico(c.icon, c.color)}<div class="row-main">
+        <div class="top"><b>${esc(c.name)}</b><span${over ? ' class="over"' : ''}>${money(sp, S.base)}</span></div>
+        <div class="bar" style="--c:${over ? 'var(--expense)' : p >= 85 ? '#E8590C' : c.color}"><i style="width:${Math.min(Math.max(p, 1.5), 100)}%"></i></div>
+        <span class="row-sub">Лимит ${money(c.limit, S.base)}, ${over ? `<span class="over">превышен на ${money(sp - c.limit, S.base)}</span>` : `осталось ${money(c.limit - sp, S.base)}`}</span></div></div>`;
+    }).join('')}</div>`;
+  }
+
   if (items.length) {
     h += `<div class="card"><h3>По категориям</h3>${items.map(it => {
       const p = it.sum / total * 100;
-      return `<div class="crow">${ico(it.c.icon, it.c.color)}<div class="row-main">
-        <div class="top"><b>${esc(it.c.name)}</b><span>${money(it.sum, S.base)}</span></div>
+      const tg = {}; let untagged = 0;
+      it.txs.forEach(t => { if (t.tags && t.tags.length) t.tags.forEach(g => tg[g] = (tg[g] || 0) + t.amount); else untagged += t.amount; });
+      const tk = Object.keys(tg).sort((a, b) => tg[b] - tg[a]);
+      const key = it.c.id || '_', open = ui.statCat === key && tk.length;
+      return `<button class="crow crow-btn" ${tk.length ? `data-action="stat-cat" data-v="${key}"` : ''}>${ico(it.c.icon, it.c.color)}<div class="row-main">
+        <div class="top"><b>${esc(it.c.name)}${tk.length ? `<span class="tag-count">${open ? '▴' : '#' + tk.length}</span>` : ''}</b><span>${money(it.sum, S.base)}</span></div>
         <div class="bar" style="--c:${it.c.color}"><i style="width:${Math.max(p, 1.5)}%"></i></div></div>
-        <span class="pct">${p < 1 ? '<1' : Math.round(p)}%</span></div>`;
+        <span class="pct">${p < 1 ? '<1' : Math.round(p)}%</span></button>
+        ${open ? `<div class="tag-break">${tk.map(g => `<div><span>#${esc(g)}</span><b>${money(tg[g], S.base)}</b></div>`).join('')}${untagged ? `<div class="muted-row"><span>без тега</span><b>${money(untagged, S.base)}</b></div>` : ''}</div>` : ''}`;
     }).join('')}</div>`;
   }
 
@@ -589,10 +651,10 @@ function renderSettings() {
     <button class="${ui.ctype === 'income' ? 'on' : ''}" data-action="ctype" data-v="income">Доходы</button></div>
   <div class="list">
     ${cats.map(c => `<button class="row" data-action="edit-cat" data-id="${c.id}">${ico(c.icon, c.color)}
-      <span class="row-main"><span class="row-title" style="display:block">${esc(c.name)}</span></span></button>`).join('')}
+      <span class="row-main"><span class="row-title" style="display:block">${esc(c.name)}</span>${c.limit > 0 ? `<span class="row-sub" style="display:block">Лимит ${money(c.limit, S.base)} в месяц</span>` : ''}</span></button>`).join('')}
     <button class="row" data-action="add-cat"><span class="ico add-ico">+</span><span class="row-main"><span class="row-title" style="color:var(--accent)">Добавить категорию</span></span></button>
   </div>
-  <p class="hint">Нажмите на категорию, чтобы переименовать её, сменить иконку или удалить.</p></div>
+  <p class="hint">Нажмите на категорию, чтобы переименовать её, сменить иконку, задать лимит или удалить.</p></div>
 
   <div class="sec-head"><h2>Данные</h2></div>
   <div class="set-group"><div class="list">
@@ -674,6 +736,7 @@ function txBody(d) {
   } else {
     const cats = S.categories.filter(c => c.type === d.type);
     mid = `<div class="lbl">Категория</div><div class="cats">${cats.map(c => `<button class="cat${c.id === d.categoryId ? ' on' : ''}" style="--c:${c.color}" data-action="pick-cat" data-id="${c.id}">${ico(c.icon, c.color)}<span>${esc(c.name)}</span></button>`).join('')}<button class="cat add" data-action="new-cat">${'<span class="ico">+</span>'}<span>Новая</span></button></div>
+      <div id="catExtra">${catExtra(d)}</div>
       <div class="lbl">Кошелёк</div><div class="chips" data-group="from">${walletChips(d.walletId, d.type)}</div>`;
   }
   return `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Операция' : 'Новая операция'}</h3><span></span></div>
@@ -689,18 +752,40 @@ function spendWallet(pref) {
   const w = getW(pref); if (w && !w.savings) return w.id;
   return (S.wallets.find(x => !x.savings) || S.wallets[0]).id;
 }
+function catExtra(d) {
+  if (!d.categoryId || d.type === 'transfer') return '';
+  const c = S.categories.find(x => x.id === d.categoryId); if (!c) return '';
+  let h = '';
+  if (d.type === 'expense' && c.limit > 0) {
+    const ym = (d.date || today()).slice(0, 7), spent = catSpent(c.id, ym, d.id), left = c.limit - spent;
+    h += `<p class="limit-hint${left < 0 ? ' over' : ''}">${left >= 0 ? `Лимит: осталось ${money(left, S.base)} из ${money(c.limit, S.base)}` : `Лимит превышен на ${money(-left, S.base)}`} в ${MP[+ym.slice(5) - 1]}</p>`;
+  }
+  const tags = catTags(c.id); d.tags.forEach(g => { if (!tags.includes(g)) tags.push(g); });
+  h += `<div class="lbl">Теги <span class="lbl-sub">необязательно</span></div><div class="chips wrap">
+    ${tags.slice(0, 14).map(g => `<button class="chip tag${d.tags.includes(g) ? ' on' : ''}" data-action="tag-toggle" data-v="${esc(g)}">#${esc(g)}</button>`).join('')}
+    ${d.tagOpen ? '' : '<button class="chip tag add" data-action="tag-open">+ тег</button>'}</div>
+    ${d.tagOpen ? `<div class="tag-add"><input class="input" id="tagInput" placeholder="Например, коста" maxlength="20" autocomplete="off" enterkeyhint="done"><button data-action="tag-add">Добавить</button></div>` : ''}`;
+  return h;
+}
 function openTx(t, draft) {
   if (!S.wallets.length) { toast('Сначала создайте кошелёк'); return openWallet(); }
   const def = spendWallet(ui.wallet || S.lastWallet);
   const d = draft ? draft : t ? { ...t, amountStr: String(t.amount).replace('.', ','), amountToStr: t.amountTo != null ? String(t.amountTo).replace('.', ',') : '', note: t.note || '' }
     : { id: null, type: 'expense', amountStr: '0', walletId: def, toWalletId: null, categoryId: null, date: today(), note: '', amountToStr: '' };
+  d.tags = Array.isArray(d.tags) ? [...d.tags] : []; d.tagOpen = false;
   if (!d.toWalletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null;
   openSheet(txBody(d));
   const selCat = document.querySelector('.sheet .cat.on');
   if (selCat) selCat.scrollIntoView({ block: 'nearest', inline: 'center' });
   const redraw = () => rerenderSheet(txBody(d));
+  const addTag = () => {
+    const i = $('#tagInput'); const v = normTag(i ? i.value : '');
+    if (v) { const ex = [...catTags(d.categoryId), ...d.tags].find(x => x.toLowerCase() === v.toLowerCase()) || v; if (!d.tags.includes(ex)) d.tags.push(ex); }
+    d.tagOpen = false; $('#catExtra').innerHTML = catExtra(d);
+  };
   ctx = {
-    input(e) { if (e.target.id === 'txNote') d.note = e.target.value; if (e.target.id === 'txDate') d.date = e.target.value; if (e.target.id === 'amtTo') d.amountToStr = e.target.value; },
+    key(e) { if (e.key === 'Enter' && e.target.id === 'tagInput') { e.preventDefault(); addTag(); } },
+    input(e) { if (e.target.id === 'txNote') d.note = e.target.value; if (e.target.id === 'txDate') { d.date = e.target.value; const x = $('#catExtra'); if (x && !d.tagOpen) x.innerHTML = catExtra(d); } if (e.target.id === 'amtTo') d.amountToStr = e.target.value; },
     action(a, el) {
       if (a === 'new-cat') { const saved = d; openCat(null, { type: d.type, back: id => { if (id) saved.categoryId = id; openTx(null, saved); } }); return true; }
       if (a === 'tx-type') { d.type = el.dataset.v; d.categoryId = null; if (d.type === 'expense') d.walletId = spendWallet(d.walletId); if (d.type === 'transfer' && d.toWalletId === d.walletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null; redraw(); return true; }
@@ -713,7 +798,10 @@ function openTx(t, draft) {
         const w = getW(d.walletId); $('#amtView').innerHTML = amountView(s, w ? w.currency : S.base);
         return true;
       }
-      if (a === 'pick-cat') { d.categoryId = el.dataset.id; document.querySelectorAll('.sheet .cat').forEach(b => b.classList.toggle('on', b === el)); return true; }
+      if (a === 'pick-cat') { if (d.categoryId !== el.dataset.id) d.tags = []; d.categoryId = el.dataset.id; d.tagOpen = false; document.querySelectorAll('.sheet .cat').forEach(b => b.classList.toggle('on', b === el)); $('#catExtra').innerHTML = catExtra(d); return true; }
+      if (a === 'tag-toggle') { const g = el.dataset.v; d.tags = d.tags.includes(g) ? d.tags.filter(x => x !== g) : [...d.tags, g]; el.classList.toggle('on'); return true; }
+      if (a === 'tag-open') { d.tagOpen = true; $('#catExtra').innerHTML = catExtra(d); const i = $('#tagInput'); if (i) i.focus(); return true; }
+      if (a === 'tag-add') { addTag(); return true; }
       if (a === 'pick-wallet') {
         const grp = el.closest('.chips').dataset.group;
         if (grp === 'to') d.toWalletId = el.dataset.id; else d.walletId = el.dataset.id;
@@ -735,11 +823,14 @@ function openTx(t, draft) {
         } else {
           if (!d.categoryId) { toast('Выберите категорию'); return true; }
           rec.categoryId = d.categoryId;
+          if (d.tags.length) rec.tags = [...d.tags];
         }
         const i = S.tx.findIndex(x => x.id === rec.id);
         if (i >= 0) S.tx[i] = rec; else S.tx.push(rec);
         S.lastWallet = rec.walletId; save(); closeSheet(); render();
-        toast(d.id ? 'Сохранено' : 'Добавлено');
+        const lc = rec.type === 'expense' && S.categories.find(x => x.id === rec.categoryId);
+        const over = lc && lc.limit > 0 ? catSpent(lc.id, rec.date.slice(0, 7)) - lc.limit : 0;
+        toast(over > 0 ? `Лимит «${lc.name}» превышен на ${money(over, S.base)}` : (d.id ? 'Сохранено' : 'Добавлено'));
         return true;
       }
       if (a === 'tx-del') {
@@ -820,10 +911,13 @@ function openWallet(w) {
 /* --- категория --- */
 function openCat(c, opts = {}) {
   const d = c ? { ...c } : { id: null, name: '', icon: '📦', color: COLORS[S.categories.length % COLORS.length], type: opts.type || ui.ctype };
+  d.limitStr = d.limit > 0 ? String(d.limit).replace('.', ',') : '';
   const preview = () => `${ico(d.icon, d.color)}<span>${esc(d.name || 'Название')}</span>`;
   const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Категория' : 'Новая категория'}</h3><button class="link-btn strong" data-action="c-save">Готово</button></div>
     <div class="cprev" id="cPrev">${preview()}</div>
     <div class="lbl">Название</div><input class="input" id="cName" value="${esc(d.name)}" placeholder="Например, Кофе" maxlength="24">
+    ${d.type === 'expense' ? `<div class="lbl">Лимит в месяц</div><input class="input" id="cLimit" inputmode="decimal" value="${d.limitStr}" placeholder="Без лимита">
+    <p class="field-hint">Приложение покажет, сколько осталось, и предупредит, если лимит превышен.</p>` : ''}
     <div class="lbl">Иконка</div><div id="emojiBox">${emojiBox(d, 'c-icon')}</div>
     <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(x => `<button class="${x === d.color ? 'on' : ''}" style="--c:${x}" data-action="c-color" data-v="${x}" aria-label="Цвет ${x}"></button>`).join('')}</div>
     <button class="primary" data-action="c-save">${d.id ? 'Сохранить' : 'Создать категорию'}</button>
@@ -832,13 +926,14 @@ function openCat(c, opts = {}) {
   const upd = () => { const p = $('#cPrev'); if (p) p.innerHTML = preview(); };
   ctx = {
     onCancel: opts.back ? () => opts.back(null) : null,
-    input(e) { if (e.target.id === 'cName') { d.name = e.target.value; upd(); } },
+    input(e) { if (e.target.id === 'cName') { d.name = e.target.value; upd(); } if (e.target.id === 'cLimit') d.limitStr = e.target.value; },
     action(a, el) {
       if (a === 'emoji-more') { d.allIcons = !d.allIcons; $('#emojiBox').innerHTML = emojiBox(d, 'c-icon'); return true; }
       if (a === 'c-icon' || a === 'c-color') { d[a === 'c-icon' ? 'icon' : 'color'] = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'c-save') {
         const name = d.name.trim(); if (!name) { toast('Введите название'); $('#cName').focus(); return true; }
         const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, type: d.type };
+        const lim = parseNum(d.limitStr); if (d.type === 'expense' && lim > 0) rec.limit = lim;
         const i = S.categories.findIndex(x => x.id === rec.id);
         if (i >= 0) S.categories[i] = rec; else S.categories.push(rec);
         save();
@@ -1137,7 +1232,21 @@ $('#importFile').addEventListener('change', async e => {
 });
 
 /* ===== События ===== */
+/* Долгое нажатие на кошелёк — редактирование */
+let lp = null, lpFired = false;
+const lpClear = () => { if (lp) { clearTimeout(lp.t); lp.el.classList.remove('holding'); lp = null; } };
+document.addEventListener('pointerdown', e => {
+  lpFired = false;
+  const el = e.target.closest('[data-long]'); if (!el || ctx) return;
+  lpClear(); el.classList.add('holding');
+  lp = { el, x: e.clientX, y: e.clientY, t: setTimeout(() => { lpFired = true; const w = getW(el.dataset.long); lpClear(); if (w) openWallet(w); }, 500) };
+});
+document.addEventListener('pointermove', e => { if (lp && Math.hypot(e.clientX - lp.x, e.clientY - lp.y) > 10) lpClear(); });
+['pointerup', 'pointercancel'].forEach(ev => document.addEventListener(ev, lpClear));
+document.addEventListener('contextmenu', e => { if (e.target.closest('[data-long]')) e.preventDefault(); });
+
 document.addEventListener('click', e => {
+  if (lpFired) { lpFired = false; e.preventDefault(); return; }
   const el = e.target.closest('[data-action]'); if (!el) return;
   const a = el.dataset.action;
   if (a === 'close-sheet') return closeSheet();
@@ -1167,6 +1276,7 @@ document.addEventListener('click', e => {
     case 'ctype': ui.ctype = el.dataset.v; render(); break;
     case 'stype': ui.stype = el.dataset.v; render(); break;
     case 'month': ui.month = addMonths(ui.month, +el.dataset.v); render(); break;
+    case 'stat-cat': ui.statCat = ui.statCat === el.dataset.v ? null : el.dataset.v; render(); break;
     case 'goto-month': ui.month = el.dataset.v; render(); break;
     case 'export': exportData(); break;
     case 'import': $('#importFile').click(); break;
@@ -1177,7 +1287,7 @@ document.addEventListener('click', e => {
 });
 document.addEventListener('input', e => { if (ctx && ctx.input) ctx.input(e); });
 document.addEventListener('change', e => { if (ctx && ctx.input && e.target.type === 'date') ctx.input(e); });
-document.addEventListener('keydown', e => { if (e.key === 'Escape' && ctx) closeSheet(); });
+document.addEventListener('keydown', e => { if (ctx && ctx.key) ctx.key(e); if (e.key === 'Escape' && ctx) closeSheet(); });
 
 render();
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
