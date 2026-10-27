@@ -177,6 +177,8 @@ button{font:inherit;color:inherit;cursor:pointer}
 .emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
 .emojis button{aspect-ratio:1;border:0;background:none;border-radius:10px;font-size:23px;line-height:1;padding:0}
 .emojis button.on{background:var(--surface);box-shadow:inset 0 0 0 2px var(--accent)}
+.ico-more{display:flex;align-items:center;justify-content:center;gap:6px;width:100%;margin-top:6px;padding:9px;border:0;border-radius:12px;background:var(--surface);color:var(--accent);font:500 15px var(--text)}
+.ico-more svg{width:18px;height:18px;transition:transform .2s}
 .swatches{display:flex;flex-wrap:wrap;gap:12px;padding:4px 2px}
 .swatches button{width:34px;height:34px;border-radius:50%;border:0;background:var(--c)}
 .swatches button.on{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
@@ -608,6 +610,12 @@ function amountView(str, cur) {
   const [i, f] = str.split(',');
   return nf.format(+i || 0) + (f !== undefined ? ',' + f : '') + `<span class="cur">${CUR[cur] || cur}</span>`;
 }
+function emojiBox(d, act) {
+  let list = EMOJI;
+  if (!d.allIcons) { list = EMOJI.slice(0, 16); if (!list.includes(d.icon)) list = [...list.slice(0, 15), d.icon]; }
+  return `<div class="emojis">${list.map(e => `<button class="${e === d.icon ? 'on' : ''}" data-action="${act}" data-v="${esc(e)}">${esc(e)}</button>`).join('')}</div>
+    <button class="ico-more" data-action="emoji-more">${d.allIcons ? 'Свернуть иконки' : 'Все иконки'}<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" style="transform:rotate(${d.allIcons ? 180 : 0}deg)"><path d="M6 9l6 6 6-6"/></svg></button>`;
+}
 function walletChips(sel, type) {
   const list = type === 'expense' ? S.wallets.filter(w => !w.savings || w.id === sel) : S.wallets;
   if (!list.length) return '<span class="field-hint">Нет кошельков для трат: все отмечены как накопления.</span>';
@@ -712,15 +720,15 @@ function openWallet(w) {
   const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Кошелёк' : 'Новый кошелёк'}</h3><button class="link-btn strong" data-action="w-save">Готово</button></div>
     <div class="wprev" id="wPrev">${preview()}</div>
     <div class="lbl">Название</div><input class="input" id="wName" value="${esc(d.name)}" placeholder="Например, Kaspi Gold" maxlength="30">
-    <div class="lbl">Иконка</div><div class="emojis">${EMOJI.map(e => `<button class="${e === d.icon ? 'on' : ''}" data-action="w-icon" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="lbl">Начальный баланс</div><input class="input" id="wInit" inputmode="decimal" value="${esc(d.initStr)}" placeholder="0">
+    <p class="field-hint">Сколько денег на этом счёте сейчас.</p>
+    <div class="lbl">Иконка</div><div id="emojiBox">${emojiBox(d, 'w-icon')}</div>
     <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(c => `<button class="${c === d.color ? 'on' : ''}" style="--c:${c}" data-action="w-color" data-v="${c}" aria-label="Цвет ${c}"></button>`).join('')}</div>
     <div class="lbl">Группа</div><div class="chips wrap" id="wGroups">${groupChips()}</div>
     <input class="input" id="wGroup" style="margin-top:8px" value="${groups.includes(d.group.trim()) ? '' : esc(d.group)}" placeholder="Новая группа, например Kaspi" maxlength="24">
     <p class="field-hint">Счета одной группы на главной собираются в одну карточку.</p>
     <div class="lbl">Тип</div>
     <button class="switch-row" role="switch" aria-checked="${d.savings}" data-action="w-sav"><span class="txt">Накопления<small>Депозит или копилка: не входит в «На руках» и не предлагается при тратах</small></span><span class="sw"></span></button>
-    <div class="lbl">Начальный баланс</div><input class="input" id="wInit" inputmode="decimal" value="${esc(d.initStr)}" placeholder="0">
-    <p class="field-hint">Сколько денег в кошельке на момент начала учёта.</p>
     <div class="lbl">Валюта</div><div class="seg">${Object.keys(CUR).map(c => `<button class="${c === d.currency ? 'on' : ''}" data-action="w-cur" data-v="${c}">${c} ${CUR[c]}</button>`).join('')}</div>
     ${d.currency !== S.base ? '<p class="field-hint">Кошельки не в тенге не входят в общий итог и статистику.</p>' : ''}
     <button class="primary" data-action="w-save">${d.id ? 'Сохранить' : 'Создать кошелёк'}</button>
@@ -734,6 +742,7 @@ function openWallet(w) {
       if (e.target.id === 'wGroup') { d.group = e.target.value; $('#wGroups').innerHTML = groupChips(); }
     },
     action(a, el) {
+      if (a === 'emoji-more') { d.allIcons = !d.allIcons; $('#emojiBox').innerHTML = emojiBox(d, 'w-icon'); return true; }
       if (a === 'w-icon') { d.icon = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'w-color') { d.color = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'w-group') { d.group = el.dataset.v; $('#wGroup').value = ''; $('#wGroups').innerHTML = groupChips(); return true; }
@@ -772,7 +781,7 @@ function openCat(c, opts = {}) {
   const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Категория' : 'Новая категория'}</h3><button class="link-btn strong" data-action="c-save">Готово</button></div>
     <div class="cprev" id="cPrev">${preview()}</div>
     <div class="lbl">Название</div><input class="input" id="cName" value="${esc(d.name)}" placeholder="Например, Кофе" maxlength="24">
-    <div class="lbl">Иконка</div><div class="emojis">${EMOJI.map(e => `<button class="${e === d.icon ? 'on' : ''}" data-action="c-icon" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="lbl">Иконка</div><div id="emojiBox">${emojiBox(d, 'c-icon')}</div>
     <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(x => `<button class="${x === d.color ? 'on' : ''}" style="--c:${x}" data-action="c-color" data-v="${x}" aria-label="Цвет ${x}"></button>`).join('')}</div>
     <button class="primary" data-action="c-save">${d.id ? 'Сохранить' : 'Создать категорию'}</button>
     ${d.id ? '<button class="danger" data-action="c-del">Удалить категорию</button>' : ''}`;
@@ -782,6 +791,7 @@ function openCat(c, opts = {}) {
     onCancel: opts.back ? () => opts.back(null) : null,
     input(e) { if (e.target.id === 'cName') { d.name = e.target.value; upd(); } },
     action(a, el) {
+      if (a === 'emoji-more') { d.allIcons = !d.allIcons; $('#emojiBox').innerHTML = emojiBox(d, 'c-icon'); return true; }
       if (a === 'c-icon' || a === 'c-color') { d[a === 'c-icon' ? 'icon' : 'color'] = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'c-save') {
         const name = d.name.trim(); if (!name) { toast('Введите название'); $('#cName').focus(); return true; }
