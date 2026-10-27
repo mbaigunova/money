@@ -214,6 +214,27 @@ button{font:inherit;color:inherit;cursor:pointer}
 .confirm-sub{text-align:center;color:var(--muted);margin:0 0 14px;font-size:15px}
 .primary.red{background:var(--expense);color:#fff}
 .secondary{display:block;width:100%;height:50px;border:0;border-radius:14px;background:var(--surface);color:var(--ink);font:500 16px var(--text);margin-top:8px}
+.debt-sum{display:grid;grid-template-columns:1fr 1fr;gap:10px;padding:4px 12px 2px}
+.debt-sum button{border:1.5px solid transparent;background:var(--surface);border-radius:18px;padding:14px;text-align:left;box-shadow:var(--shadow);min-width:0}
+.debt-sum button.on{border-color:var(--accent)}
+.debt-sum small{display:block;color:var(--muted);font-size:13px}
+.debt-sum strong{display:block;font:600 18px var(--num);margin-top:4px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.debt-sum .pos{color:var(--income)}
+.ava{border-radius:50%;display:grid;place-items:center;font:600 14px var(--text);flex:none}
+.dbar{display:block;height:4px;border-radius:2px;background:var(--surface-2);margin-top:6px;overflow:hidden}
+.dbar i{display:block;height:100%;background:var(--income);border-radius:2px}
+.dbar.big{height:8px;border-radius:4px;margin:10px 0 8px}
+.row.closed{opacity:.6}
+.over{color:var(--expense)}
+.debt-head{display:flex;align-items:center;gap:14px;margin:4px 2px 12px}
+.debt-head b{display:block;font-size:19px;font-weight:600}
+.debt-head span{color:var(--muted);font-size:14px}
+.debt-box{background:var(--surface);border-radius:18px;padding:16px;box-shadow:var(--shadow)}
+.debt-box small{color:var(--muted);font-size:13px}
+.debt-left{font:700 30px/1.15 var(--num);letter-spacing:-.02em;margin-top:2px}
+.debt-note{margin:10px 0 0;font-size:14px}
+.dates{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.dates .input{width:100%}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -228,6 +249,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <nav class="nav"><div class="nav-in">
   <button data-action="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/><path d="M6 6l9-3 1.5 3"/></svg>Кошельки</button>
   <button data-action="tab" data-v="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>Статистика</button>
+  <button data-action="tab" data-v="debts"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3.2"/><path d="M3.5 19.5c.6-3.2 2.8-5 5.5-5s4.9 1.8 5.5 5"/><path d="M16 6.5h5M18.5 4v5"/><path d="M16 14.5h5"/></svg>Долги</button>
   <button data-action="tab" data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Настройки</button>
 </div></nav>
 
@@ -236,6 +258,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 <script>
 /* ===== Константы ===== */
+// Версия приложения: меняется с каждым обновлением
+const APP_VERSION = '2.0';
+const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
 const COLORS = ['#C92A2A','#0B8FA3','#1F8656','#3B5BDB','#7048E8','#C2255C','#E8590C','#A67C00','#2B3A4A','#5C940D','#9C36B5','#1971C2'];
@@ -280,7 +305,7 @@ function dayLabel(ds) {
 function seed() {
   const c = (name, icon, color, type) => ({ id: uid(), name, icon, color, type });
   return {
-    version: 2, base: 'KZT', lastWallet: null, lastBackup: null,
+    version: 3, base: 'KZT', lastWallet: null, lastBackup: null,
     wallets: [
       { id: uid(), name: 'Kaspi Gold', icon: '💳', color: '#C92A2A', currency: 'KZT', initial: 0, group: 'Kaspi', savings: false },
       { id: uid(), name: 'Наличные', icon: '💵', color: '#1F8656', currency: 'KZT', initial: 0, group: '', savings: false },
@@ -298,7 +323,7 @@ function seed() {
       c('Проценты','📈','#A67C00','income'),
       c('Другое','📦','#2B3A4A','income'),
     ],
-    tx: [],
+    tx: [], debts: [],
   };
 }
 function migrate(d) {
@@ -311,6 +336,8 @@ function migrate(d) {
     d.version = 2;
   }
   d.wallets.forEach(w => { if (w.group == null) w.group = ''; w.savings = !!w.savings; });
+  if (!Array.isArray(d.debts)) d.debts = [];
+  if (d.version < 3) d.version = 3;
   return d;
 }
 function load() {
@@ -322,7 +349,7 @@ function save() {
   catch (e) { toast('Не удалось сохранить данные'); }
 }
 let S = load();
-const ui = { tab: 'home', wallet: null, group: null, month: today().slice(0, 7), stype: 'expense', ctype: 'expense', limit: 120 };
+const ui = { tab: 'home', wallet: null, group: null, dtype: 'lent', showClosed: false, month: today().slice(0, 7), stype: 'expense', ctype: 'expense', limit: 120 };
 let ctx = null; // контекст открытого окна
 
 const getW = id => S.wallets.find(w => w.id === id);
@@ -333,6 +360,7 @@ function balances() {
   S.tx.forEach(t => {
     if (t.type === 'expense' && t.walletId in m) m[t.walletId] -= t.amount;
     else if (t.type === 'income' && t.walletId in m) m[t.walletId] += t.amount;
+    else if (t.type === 'debt') { if (t.walletId && t.walletId in m) m[t.walletId] += t.flow * t.amount; }
     else if (t.type === 'transfer') {
       if (t.walletId in m) m[t.walletId] -= t.amount;
       if (t.toWalletId in m) m[t.toWalletId] += (t.amountTo ?? t.amount);
@@ -373,6 +401,14 @@ function groupCard(u, b) {
 }
 function txRow(t) {
   const w = getW(t.walletId);
+  if (t.type === 'debt') {
+    const d = S.debts.find(x => x.id === t.debtId), lent = d && d.dir === 'lent';
+    const kind = t.kind === 'repay' ? (lent ? 'Вам вернули долг' : 'Вы вернули долг') : (lent ? 'Дали в долг' : 'Взяли в долг');
+    const sub = [kind, ui.wallet ? '' : (w ? w.name : ''), t.note].filter(Boolean).map(esc).join(', ');
+    return `<button class="row" data-action="open-debt" data-id="${t.debtId}">${ico('🤝', '#667385')}
+      <span class="row-main"><span class="row-title" style="display:block">Долг: ${esc(d ? d.person : '?')}</span><span class="row-sub" style="display:block">${sub}</span></span>
+      <span class="amt transfer">${money(t.amount, w ? w.currency : S.base, t.flow < 0 ? '−' : '+')}</span></button>`;
+  }
   if (t.type === 'transfer') {
     const to = getW(t.toWalletId);
     const amt = (w && to && w.currency !== to.currency && t.amountTo != null)
@@ -433,7 +469,7 @@ function renderHome() {
 
   const fw = ui.wallet && getW(ui.wallet);
   const ids = fw ? [fw.id] : ui.group ? groupMembers(ui.group).map(w => w.id) : null;
-  let list = S.tx.filter(t => !ids || ids.includes(t.walletId) || ids.includes(t.toWalletId)).sort(sortTx);
+  let list = S.tx.filter(t => !(t.type === 'debt' && !t.walletId) && (!ids || ids.includes(t.walletId) || ids.includes(t.toWalletId))).sort(sortTx);
   h += `<div class="sec-head"><h2>${fw ? esc(fw.name) : ui.group ? 'Операции: ' + esc(ui.group) : 'Операции'}</h2>
     ${fw ? `<span><button class="link-btn" data-action="edit-wallet" data-id="${fw.id}">Изменить</button>&nbsp;&nbsp;<button class="link-btn" data-action="show-all">Все</button></span>` : ui.group ? '<button class="link-btn" data-action="close-group">Все</button>' : ''}</div>`;
 
@@ -566,13 +602,19 @@ function renderSettings() {
     <button class="row danger-row" data-action="reset">${ico('🗑️', '#C92A2A')}<span class="row-main"><span class="row-title" style="display:block">Удалить все данные</span></span></button>
   </div>
   <p class="hint">Все данные хранятся только на этом телефоне. Сохраняйте копию раз в неделю или две: файл можно положить в iCloud Drive через «Сохранить в Файлы».</p>
+  </div>
+  <div class="sec-head"><h2>О приложении</h2></div>
+  <div class="set-group"><div class="list">
+    <div class="row">${ico('🪙', '#0B8FA3')}<span class="row-main"><span class="row-title" style="display:block">Тиын, версия ${APP_VERSION}</span>
+      <span class="row-sub" style="display:block">Обновлено ${(d => d.getDate() + ' ' + MG[d.getMonth()] + ' ' + d.getFullYear())(new Date(APP_DATE + 'T12:00:00'))}</span></span></div>
+  </div>
   <p class="hint">Операций: ${S.tx.length}.</p></div>`;
 }
 
 /* ===== Рендер ===== */
 function render() {
   const v = $('#view');
-  v.innerHTML = ui.tab === 'home' ? renderHome() : ui.tab === 'stats' ? renderStats() : renderSettings();
+  v.innerHTML = ui.tab === 'home' ? renderHome() : ui.tab === 'stats' ? renderStats() : ui.tab === 'debts' ? renderDebts() : renderSettings();
   document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.v === ui.tab));
   $('.fab').hidden = ui.tab === 'settings';
 }
@@ -761,10 +803,11 @@ function openWallet(w) {
         return true;
       }
       if (a === 'w-del') {
-        const n = S.tx.filter(t => t.walletId === d.id || t.toWalletId === d.id).length;
+        const n = S.tx.filter(t => t.type !== 'debt' && (t.walletId === d.id || t.toWalletId === d.id)).length;
         if (!confirm(n ? `Удалить кошелёк и все его операции (${n})? Это нельзя отменить.` : 'Удалить кошелёк?')) return true;
         S.wallets = S.wallets.filter(x => x.id !== d.id);
-        S.tx = S.tx.filter(t => t.walletId !== d.id && t.toWalletId !== d.id);
+        S.tx.forEach(t => { if (t.type === 'debt' && t.walletId === d.id) t.walletId = null; });
+        S.tx = S.tx.filter(t => t.type === 'debt' || (t.walletId !== d.id && t.toWalletId !== d.id));
         if (ui.wallet === d.id) ui.wallet = null;
         if (ui.group && !isGroup(ui.group)) ui.group = null;
         save(); closeSheet(); render(); toast('Удалено');
@@ -837,6 +880,234 @@ function openCatDelete(c) {
   };
 }
 
+/* ===== Долги ===== */
+function debtStats(id) {
+  let total = 0, rep = 0, first = null;
+  S.tx.forEach(t => { if (t.type !== 'debt' || t.debtId !== id) return; if (t.kind === 'repay') rep += t.amount; else total += t.amount; if (!first || t.date < first) first = t.date; });
+  return { total, rep, left: Math.max(Math.round((total - rep) * 100) / 100, 0), first };
+}
+const debtFlow = (dir, kind) => ((dir === 'lent') !== (kind === 'repay')) ? -1 : 1;
+function avatar(name, size = 40) {
+  const c = COLORS[[...name].reduce((s, ch) => s + ch.charCodeAt(0), 0) % COLORS.length];
+  const ini = name.trim().split(/\s+/).map(w => [...w][0] || '').slice(0, 2).join('').toUpperCase();
+  return `<span class="ava" style="width:${size}px;height:${size}px;font-size:${Math.round(size * .36)}px;background:${tint(c, .17)};color:${c}">${esc(ini || '?')}</span>`;
+}
+function fmtDate(ds) { const d = new Date(ds + 'T12:00:00'); return d.getDate() + ' ' + MG[d.getMonth()] + (d.getFullYear() !== new Date().getFullYear() ? ' ' + d.getFullYear() : ''); }
+function padApply(s, k) {
+  if (k === '⌫') return s.length > 1 ? s.slice(0, -1) : '0';
+  if (k === ',') return s.includes(',') ? s : s + ',';
+  if (s.includes(',') && s.split(',')[1].length >= 2) return s;
+  if (s.replace(',', '').length >= 11) return s;
+  return s === '0' ? k : s + k;
+}
+const numpadHtml = () => `<div class="numpad">${['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(k => `<button data-action="pad" data-k="${k}" aria-label="${k === '⌫' ? 'Стереть' : k}">${k}</button>`).join('')}</div>`;
+function debtWalletChips(sel) {
+  return S.wallets.filter(w => w.currency === S.base).map(w => `<button class="chip${w.id === sel ? ' on' : ''}" style="--c:${w.color}" data-action="dw" data-id="${w.id}">${esc(w.icon)} ${esc(w.name)}</button>`).join('')
+    + `<button class="chip${!sel ? ' on' : ''}" style="--c:var(--muted)" data-action="dw" data-id="">Не учитывать</button>`;
+}
+function confirmSheet({ title, text, ok, onOk, onCancel }) {
+  openSheet(`<div class="sheet-top"><span></span><h3>Удаление</h3><span></span></div>
+    <p class="confirm-q">${title}</p><p class="confirm-sub">${text}</p>
+    <button class="primary red" data-action="cf-ok">${ok}</button><button class="secondary" data-action="cf-cancel">Отмена</button>`);
+  ctx = { onCancel, action(a) { if (a === 'cf-ok') { ctx.onCancel = null; onOk(); return true; } if (a === 'cf-cancel') { closeSheet(); return true; } } };
+}
+
+function renderDebts() {
+  const t = today();
+  const all = S.debts.map(d => ({ d, ...debtStats(d.id) }));
+  const sumLeft = dir => all.filter(x => x.d.dir === dir).reduce((s, x) => s + x.left, 0);
+  const list = all.filter(x => x.d.dir === ui.dtype);
+  const isOver = x => x.left > 0 && x.d.due && x.d.due < t;
+  const open = list.filter(x => x.left > 0).sort((a, b) => (isOver(b) - isOver(a)) || ((b.d.createdAt || 0) - (a.d.createdAt || 0)));
+  const closed = list.filter(x => x.left <= 0);
+  const row = x => {
+    const d = x.d; let sub;
+    if (x.left <= 0) sub = 'Возвращён полностью';
+    else if (isOver(x)) sub = `<span class="over">Срок прошёл: ${fmtDate(d.due)}</span>`;
+    else if (x.rep > 0) sub = `Осталось из ${money(x.total, S.base)}`;
+    else if (d.due) sub = `Вернуть до ${fmtDate(d.due)}`;
+    else sub = x.first ? `С ${fmtDate(x.first)}` : '';
+    const bar = x.left > 0 && x.rep > 0 ? `<span class="dbar"><i style="width:${x.rep / x.total * 100}%"></i></span>` : '';
+    return `<button class="row${x.left <= 0 ? ' closed' : ''}" data-action="open-debt" data-id="${d.id}">${avatar(d.person)}
+      <span class="row-main"><span class="row-title" style="display:block">${esc(d.person)}</span><span class="row-sub" style="display:block">${sub}</span>${bar}</span>
+      <span class="amt">${money(x.left > 0 ? x.left : x.total, S.base)}</span></button>`;
+  };
+  let h = `<div class="sec-head" style="padding-top:6px"><h2>Долги</h2></div>
+    <div class="debt-sum">
+      <button class="${ui.dtype === 'lent' ? 'on' : ''}" data-action="dtype" data-v="lent"><small>Мне должны</small><strong class="pos">${money(sumLeft('lent'), S.base)}</strong></button>
+      <button class="${ui.dtype === 'borrowed' ? 'on' : ''}" data-action="dtype" data-v="borrowed"><small>Мои долги</small><strong>${money(sumLeft('borrowed'), S.base)}</strong></button>
+    </div>`;
+  if (!open.length) {
+    h += `<div class="empty"><div class="big">🤝</div><p>${ui.dtype === 'lent' ? 'Здесь появятся люди, которые должны вам.' : 'Здесь появятся ваши долги.'}</p><button class="primary inline" data-action="add-debt">Записать долг</button></div>`;
+  } else {
+    h += `<div class="day" style="margin-top:12px"><div class="list">${open.map(row).join('')}</div></div>`;
+  }
+  if (closed.length) {
+    h += `<button class="more" data-action="toggle-closed">${ui.showClosed ? 'Скрыть закрытые' : `Закрытые долги (${closed.length})`}</button>`;
+    if (ui.showClosed) h += `<div class="day"><div class="list">${closed.map(row).join('')}</div></div>`;
+  }
+  return h;
+}
+
+function openDebtNew() {
+  const n = { dir: ui.dtype, amountStr: '0', person: '', walletId: S.wallets.length ? spendWallet(S.lastWallet) : null, date: today(), due: '', note: '' };
+  const people = [...new Set(S.debts.map(d => d.person))].slice(-8).reverse();
+  const body = () => {
+    const lent = n.dir === 'lent';
+    return `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>Новый долг</h3><span></span></div>
+    <div class="seg"><button class="${lent ? 'on' : ''}" data-action="d-dir" data-v="lent">Дать в долг</button><button class="${!lent ? 'on' : ''}" data-action="d-dir" data-v="borrowed">Взять в долг</button></div>
+    <div class="amount" id="amtView">${amountView(n.amountStr, S.base)}</div>
+    <div class="lbl">${lent ? 'Кому' : 'У кого'}</div>
+    <input class="input" id="dPerson" value="${esc(n.person)}" placeholder="Имя" maxlength="30" autocomplete="off">
+    ${people.length ? `<div class="chips wrap" style="margin-top:8px">${people.map(p => `<button class="chip" style="--c:var(--accent)" data-action="d-person" data-v="${esc(p)}">${esc(p)}</button>`).join('')}</div>` : ''}
+    <div class="lbl">${lent ? 'С какого кошелька' : 'На какой кошелёк'}</div>
+    <div class="chips" id="dWallets">${debtWalletChips(n.walletId)}</div>
+    <p class="field-hint">«Не учитывать», если долг появился до начала учёта: балансы кошельков не изменятся.</p>
+    <div class="dates" style="margin-top:6px"><div><div class="lbl">Дата</div><input class="input" type="date" id="dDate" value="${n.date}"></div>
+      <div><div class="lbl">Вернуть до</div><input class="input" type="date" id="dDue" value="${n.due}"></div></div>
+    <input class="input" id="dNote" style="margin-top:8px" placeholder="Заметка, например «на ремонт»" value="${esc(n.note)}" maxlength="80">
+    ${numpadHtml()}
+    <button class="primary" data-action="d-save">Записать долг</button>`;
+  };
+  openSheet(body());
+  ctx = {
+    input(e) { const id = e.target.id; if (id === 'dPerson') n.person = e.target.value; if (id === 'dDate') n.date = e.target.value; if (id === 'dDue') n.due = e.target.value; if (id === 'dNote') n.note = e.target.value; },
+    action(a, el) {
+      if (a === 'd-dir') { n.dir = el.dataset.v; rerenderSheet(body()); return true; }
+      if (a === 'pad') { n.amountStr = padApply(n.amountStr, el.dataset.k); $('#amtView').innerHTML = amountView(n.amountStr, S.base); return true; }
+      if (a === 'd-person') { n.person = el.dataset.v; $('#dPerson').value = n.person; return true; }
+      if (a === 'dw') { n.walletId = el.dataset.id || null; $('#dWallets').innerHTML = debtWalletChips(n.walletId); return true; }
+      if (a === 'd-save') {
+        const amount = parseNum(n.amountStr), person = n.person.trim();
+        if (!(amount > 0)) { toast('Введите сумму'); return true; }
+        if (!person) { toast('Укажите имя'); $('#dPerson').focus(); return true; }
+        let d = S.debts.find(x => x.dir === n.dir && x.person.toLowerCase() === person.toLowerCase() && debtStats(x.id).left > 0);
+        const merged = !!d;
+        if (!d) { d = { id: uid(), person, dir: n.dir, due: n.due || '', note: n.note.trim(), createdAt: Date.now() }; S.debts.push(d); }
+        else if (n.due) d.due = n.due;
+        S.tx.push({ id: uid(), type: 'debt', debtId: d.id, kind: merged ? 'add' : 'open', amount, walletId: n.walletId, flow: debtFlow(n.dir, 'open'), date: n.date || today(), note: merged ? n.note.trim() : '', createdAt: Date.now() });
+        if (n.walletId) S.lastWallet = n.walletId;
+        ui.dtype = n.dir; save(); closeSheet(); render();
+        toast(merged ? 'Добавлено к долгу: ' + d.person : 'Долг записан');
+        return true;
+      }
+    }
+  };
+}
+
+function openDebtCard(id) {
+  const d = S.debts.find(x => x.id === id); if (!d) return;
+  const st = debtStats(id), lent = d.dir === 'lent', t = today();
+  const evs = S.tx.filter(x => x.type === 'debt' && x.debtId === id).sort(sortTx);
+  const evName = e => e.kind === 'repay' ? (lent ? 'Вам вернули' : 'Вы вернули') : e.kind === 'add' ? (lent ? 'Дали ещё' : 'Взяли ещё') : (lent ? 'Дали в долг' : 'Взяли в долг');
+  const pct = st.total ? Math.min(st.rep / st.total * 100, 100) : 0;
+  const dueTxt = d.due && st.left > 0 ? (d.due < t ? ` <span class="over">Срок прошёл: ${fmtDate(d.due)}.</span>` : ` Вернуть до ${fmtDate(d.due)}.`) : '';
+  openSheet(`<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Закрыть</button><h3></h3><button class="link-btn" data-action="debt-edit">Изменить</button></div>
+    <div class="debt-head">${avatar(d.person, 56)}<div><b>${esc(d.person)}</b><span>${lent ? 'Мне должны' : 'Мой долг'}</span></div></div>
+    <div class="debt-box">
+      <small>${st.left > 0 ? 'Осталось вернуть' : 'Долг возвращён полностью'}</small>
+      <div class="debt-left"${st.left > 0 ? '' : ' style="color:var(--income)"'}>${money(st.left > 0 ? st.left : st.total, S.base)}</div>
+      <span class="dbar big"><i style="width:${pct}%"></i></span>
+      <small>Возвращено ${money(st.rep, S.base)} из ${money(st.total, S.base)}.${dueTxt}</small>
+      ${d.note ? `<p class="debt-note">${esc(d.note)}</p>` : ''}
+    </div>
+    ${st.left > 0 ? `<button class="primary" data-action="debt-repay">Записать возврат</button><button class="secondary" data-action="debt-add">${lent ? 'Дать ещё' : 'Взять ещё'}</button>` : ''}
+    <div class="lbl" style="margin-top:18px">История</div>
+    <div class="list">${evs.map(e => { const w = getW(e.walletId); return `<button class="row" data-action="debt-ev" data-id="${e.id}">
+      <span class="row-main"><span class="row-title" style="display:block">${evName(e)}</span>
+      <span class="row-sub" style="display:block">${fmtDate(e.date)}${w ? ', ' + (e.flow < 0 ? 'с ' : 'на ') + esc(w.name) : ', без кошелька'}${e.note ? ', ' + esc(e.note) : ''}</span></span>
+      <span class="amt ${e.kind === 'repay' ? 'income' : ''}">${money(e.amount, S.base)}</span></button>`; }).join('')}</div>
+    <p class="field-hint" style="margin:8px 4px 0">Ошибочную запись можно удалить: нажмите на неё.</p>`);
+  ctx = {
+    action(a, el) {
+      if (a === 'debt-repay' || a === 'debt-add') { openDebtMove(d, a === 'debt-repay' ? 'repay' : 'add'); return true; }
+      if (a === 'debt-edit') { openDebtEdit(d); return true; }
+      if (a === 'debt-ev') {
+        const e = S.tx.find(x => x.id === el.dataset.id); if (!e) return true;
+        const last = evs.length === 1;
+        confirmSheet({
+          title: `Удалить запись «${evName(e)}» на ${money(e.amount, S.base)}?`,
+          text: last ? 'Это единственная запись, поэтому долг удалится целиком.' : 'Баланс кошелька пересчитается автоматически.',
+          ok: 'Да, удалить',
+          onCancel: () => openDebtCard(d.id),
+          onOk: () => {
+            S.tx = S.tx.filter(x => x.id !== e.id);
+            if (last) S.debts = S.debts.filter(x => x.id !== d.id);
+            save(); render();
+            if (last) { closeSheet(); toast('Долг удалён'); } else { closeSheet(true); openDebtCard(d.id); toast('Запись удалена'); }
+          }
+        });
+        return true;
+      }
+    }
+  };
+}
+
+function openDebtMove(d, kind) {
+  const st = debtStats(d.id), lent = d.dir === 'lent', flow = debtFlow(d.dir, kind);
+  const m = { amountStr: kind === 'repay' ? String(st.left).replace('.', ',') : '0', walletId: S.wallets.length ? spendWallet(S.lastWallet) : null, date: today(), note: '' };
+  const title = kind === 'repay' ? (lent ? 'Вам вернули' : 'Вы вернули') : (lent ? 'Дать ещё' : 'Взять ещё');
+  openSheet(`<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${title}</h3><span></span></div>
+    <div class="debt-head" style="justify-content:center;margin-bottom:0">${avatar(d.person, 36)}<div><b style="font-size:16px">${esc(d.person)}</b>${kind === 'repay' ? `<span>Осталось ${money(st.left, S.base)}</span>` : ''}</div></div>
+    <div class="amount" id="amtView">${amountView(m.amountStr, S.base)}</div>
+    <div class="lbl">${flow < 0 ? 'С какого кошелька' : 'На какой кошелёк'}</div>
+    <div class="chips" id="dWallets">${debtWalletChips(m.walletId)}</div>
+    <div class="row2"><input class="input date" type="date" id="mDate" value="${m.date}"><input class="input" id="mNote" placeholder="Заметка" maxlength="80"></div>
+    ${numpadHtml()}
+    <button class="primary" data-action="m-save">Сохранить</button>`);
+  ctx = {
+    onCancel: () => openDebtCard(d.id),
+    input(e) { if (e.target.id === 'mDate') m.date = e.target.value; if (e.target.id === 'mNote') m.note = e.target.value; },
+    action(a, el) {
+      if (a === 'pad') { m.amountStr = padApply(m.amountStr, el.dataset.k); $('#amtView').innerHTML = amountView(m.amountStr, S.base); return true; }
+      if (a === 'dw') { m.walletId = el.dataset.id || null; $('#dWallets').innerHTML = debtWalletChips(m.walletId); return true; }
+      if (a === 'm-save') {
+        const amount = parseNum(m.amountStr);
+        if (!(amount > 0)) { toast('Введите сумму'); return true; }
+        if (kind === 'repay' && amount > st.left + 0.001) { toast('Осталось вернуть только ' + money(st.left, S.base)); return true; }
+        S.tx.push({ id: uid(), type: 'debt', debtId: d.id, kind, amount, walletId: m.walletId, flow, date: m.date || today(), note: m.note.trim(), createdAt: Date.now() });
+        if (m.walletId) S.lastWallet = m.walletId;
+        save(); render(); ctx.onCancel = null; closeSheet(true); openDebtCard(d.id);
+        toast(kind === 'repay' && Math.abs(amount - st.left) < 0.001 ? 'Долг закрыт' : 'Сохранено');
+        return true;
+      }
+    }
+  };
+}
+
+function openDebtEdit(d) {
+  const e = { person: d.person, due: d.due || '', note: d.note || '' };
+  openSheet(`<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>Изменить долг</h3><button class="link-btn strong" data-action="de-save">Готово</button></div>
+    <div class="lbl">Имя</div><input class="input" id="dePerson" value="${esc(e.person)}" maxlength="30">
+    <div class="lbl">Вернуть до</div><input class="input" type="date" id="deDue" value="${e.due}">
+    <p class="field-hint">Чтобы убрать срок, очистите дату.</p>
+    <div class="lbl">Заметка</div><input class="input" id="deNote" value="${esc(e.note)}" maxlength="80">
+    <button class="primary" data-action="de-save">Сохранить</button>
+    <button class="danger" data-action="de-del">Удалить долг</button>`);
+  ctx = {
+    onCancel: () => openDebtCard(d.id),
+    input(ev) { const id = ev.target.id; if (id === 'dePerson') e.person = ev.target.value; if (id === 'deDue') e.due = ev.target.value; if (id === 'deNote') e.note = ev.target.value; },
+    action(a) {
+      if (a === 'de-save') {
+        if (!e.person.trim()) { toast('Укажите имя'); return true; }
+        d.person = e.person.trim(); d.due = e.due; d.note = e.note.trim();
+        save(); render(); ctx.onCancel = null; closeSheet(true); openDebtCard(d.id); toast('Сохранено');
+        return true;
+      }
+      if (a === 'de-del') {
+        confirmSheet({
+          title: `Удалить долг «${esc(d.person)}»?`,
+          text: 'Удалится вся история возвратов, а балансы кошельков пересчитаются так, будто долга не было. Это нельзя отменить.',
+          ok: 'Да, удалить',
+          onCancel: () => openDebtEdit(d),
+          onOk: () => { S.debts = S.debts.filter(x => x.id !== d.id); S.tx = S.tx.filter(x => !(x.type === 'debt' && x.debtId === d.id)); save(); closeSheet(); render(); toast('Долг удалён'); }
+        });
+        return true;
+      }
+    }
+  };
+}
+
 /* ===== Резервная копия ===== */
 async function exportData() {
   const name = 'tiyn-' + today() + '.json';
@@ -873,7 +1144,11 @@ document.addEventListener('click', e => {
   if (ctx && ctx.action && ctx.action(a, el)) return;
   switch (a) {
     case 'tab': ui.tab = el.dataset.v; ui.limit = 120; render(); window.scrollTo(0, 0); break;
-    case 'add-tx': openTx(); break;
+    case 'add-tx': ui.tab === 'debts' ? openDebtNew() : openTx(); break;
+    case 'add-debt': openDebtNew(); break;
+    case 'open-debt': openDebtCard(el.dataset.id); break;
+    case 'dtype': ui.dtype = el.dataset.v; ui.showClosed = false; render(); break;
+    case 'toggle-closed': ui.showClosed = !ui.showClosed; render(); break;
     case 'open-tx': openTx(S.tx.find(t => t.id === el.dataset.id)); break;
     case 'filter': {
       const w = getW(el.dataset.id);
