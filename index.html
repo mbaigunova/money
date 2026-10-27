@@ -265,6 +265,19 @@ button{font:inherit;color:inherit;cursor:pointer}
 .fb-txt b{font-weight:600}
 .fb-txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
 .filter-bar button{width:34px;height:34px;border:0;border-radius:50%;background:var(--surface-2);color:var(--muted);font-size:15px;flex:none}
+#lock{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center}
+#lock[hidden]{display:none}
+#lock img{width:76px;height:76px;border-radius:19px;margin-bottom:6px}
+#lock h2{margin:0;font:600 20px var(--text)}
+#lock p{margin:0 0 10px;color:var(--muted);max-width:300px}
+.lock-btn{display:flex;align-items:center;gap:8px;height:50px!important;padding:0 22px!important;font-size:16px!important}
+.lock-btn svg{width:22px;height:22px}
+.lock-help{font-size:14px;margin-top:6px}
+.lock-intro{text-align:center;padding:8px 6px 0}
+.lock-intro .big-ico{width:64px;height:64px;border-radius:20px;margin:0 auto 12px;display:grid;place-items:center;background:var(--surface);color:var(--accent);box-shadow:var(--shadow)}
+.lock-intro .big-ico svg{width:34px;height:34px}
+.lock-intro h3{margin:0 0 8px;font:600 19px var(--text)}
+.lock-intro p{margin:0 0 6px;color:var(--muted);font-size:15px}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -285,11 +298,18 @@ button{font:inherit;color:inherit;cursor:pointer}
 
 <input type="file" id="importFile" accept="application/json,.json" hidden>
 <div class="toast" id="toast"></div>
+<div id="lock" hidden>
+  <img src="icon-192.png" alt="">
+  <h2>Тиын заблокирован</h2>
+  <p id="lockMsg">Разблокируйте с помощью Face ID</p>
+  <button class="primary inline lock-btn" id="lockBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1"/><path d="M9 15.5c1.7 1.3 4.3 1.3 6 0"/></svg>Разблокировать</button>
+  <button class="link-btn lock-help" id="lockHelp">Не получается войти?</button>
+</div>
 
 <script>
 /* ===== Константы ===== */
 // Версия приложения: меняется с каждым обновлением
-const APP_VERSION = '2.4';
+const APP_VERSION = '2.6';
 const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
@@ -440,6 +460,7 @@ const tagLine = t => (t.tags && t.tags.length) ? t.tags.map(g => '#' + g).join('
 function catSpent(catId, ym, exceptId) {
   return S.tx.filter(t => t.type === 'expense' && t.categoryId === catId && t.date.startsWith(ym) && t.id !== exceptId && inBase(t)).reduce((s, t) => s + t.amount, 0);
 }
+const rateTxt = w => (w.savings && w.interest && w.interest.on && w.interest.rate > 0) ? ', ' + String(w.interest.rate).replace('.', ',') + '%' : '';
 const sortTx = (a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0));
 
 /* ===== Главная ===== */
@@ -447,7 +468,7 @@ function walletCard(w, balance, extra = '') {
   return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
     <span class="w-emoji">${esc(w.icon)}</span>
     <span><span class="w-name" style="display:block">${esc(w.name || 'Кошелёк')}</span>
-    <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span>${w.savings ? '<span class="w-small">Накопления</span>' : ''}</span>
+    <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span>${w.savings ? `<span class="w-small">Накопления${rateTxt(w)}</span>` : ''}</span>
   </button>`;
 }
 function groupCard(u, b) {
@@ -659,7 +680,7 @@ function renderSettings() {
   <div class="set-group"><div class="list">
     ${S.wallets.map(w => `<button class="row" data-action="edit-wallet" data-id="${w.id}">
       <span class="ico" style="background:${w.color}">${esc(w.icon)}</span>
-      <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span><span class="row-sub" style="display:block">${[gname(w), w.savings ? 'накопления' : '', w.currency].filter(Boolean).map(esc).join(', ')}</span></span>
+      <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span><span class="row-sub" style="display:block">${[gname(w), w.savings ? 'накопления' + rateTxt(w) : '', w.currency].filter(Boolean).map(esc).join(', ')}</span></span>
       <span class="amt">${bal(b[w.id], w.currency)}</span></button>`).join('')}
     <button class="row" data-action="add-wallet"><span class="ico add-ico">+</span><span class="row-main"><span class="row-title" style="color:var(--accent)">Добавить кошелёк</span></span></button>
   </div></div>
@@ -675,6 +696,11 @@ function renderSettings() {
   </div>
   <p class="hint">Нажмите на категорию, чтобы переименовать её, сменить иконку, задать лимит или удалить.</p></div>
 
+  <div class="sec-head"><h2>Защита</h2></div>
+  <div class="set-group"><div class="list">
+    <button class="switch-row" style="border:0;border-radius:0;padding:11px 14px" role="switch" aria-checked="${!!LK.on}" data-action="lock-toggle" ${FACE_OK ? '' : 'disabled'}>
+      ${ico('🔒', '#2B3A4A')}<span class="txt" style="margin-left:0">Вход по Face ID<small>${FACE_OK ? 'Приложение попросит Face ID при открытии' : 'Недоступно на этом устройстве или в этом браузере'}</small></span><span class="sw"></span></button>
+  </div></div>
   <div class="sec-head"><h2>Данные</h2></div>
   <div class="set-group"><div class="list">
     <button class="row" data-action="export">${ico('💾', '#0B8FA3')}<span class="row-main"><span class="row-title" style="display:block">Сохранить копию</span>
@@ -862,6 +888,17 @@ function openWallet(w) {
   const d = w ? { ...w, initStr: w.initial ? String(w.initial).replace('.', ',') : '' }
     : { id: null, name: '', icon: '💳', color: COLORS[(S.wallets.length + 1) % COLORS.length], currency: S.base, initStr: '', group: ui.group || '', savings: false };
   d.group = d.group || ''; d.savings = !!d.savings;
+  const wi = (w && w.interest) || {};
+  d.int = { on: !!wi.on, rateStr: wi.rate ? String(wi.rate).replace('.', ',') : '', day: wi.day || 1 };
+  const estTxt = () => {
+    const b0 = d.id ? (balances()[d.id] || 0) : parseNum(d.initStr), r = parseNum(d.int.rateStr);
+    const est = r > 0 ? Math.round(b0 * r / 100 / 12 * 100) / 100 : 0;
+    return (est > 0 ? `При текущем балансе это примерно +${money(est, d.currency)} в месяц. ` : '') + 'Сумма считается от баланса на день начисления: баланс × ставка ÷ 12.' + (d.int.day > 28 ? ' В коротких месяцах проценты придут в последний день месяца.' : '');
+  };
+  const intBox = () => !d.savings ? '' : `<button class="switch-row" style="margin-top:8px" role="switch" aria-checked="${d.int.on}" data-action="w-int"><span class="txt">Начислять проценты<small>Каждый месяц приложение само добавит доход «Проценты» на этот счёт</small></span><span class="sw"></span></button>
+    ${d.int.on ? `<div class="dates" style="margin-top:2px"><div><div class="lbl">Ставка, % годовых</div><input class="input" id="wRate" inputmode="decimal" value="${esc(d.int.rateStr)}" placeholder="Например, 14"></div>
+      <div><div class="lbl">День начисления</div><select class="input" id="wDay">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}"${i + 1 === d.int.day ? ' selected' : ''}>${i + 1}-го числа</option>`).join('')}</select></div></div>
+      <p class="field-hint" id="wEst">${estTxt()}</p>` : ''}`;
   const groups = [...new Set(S.wallets.map(gname).filter(Boolean))];
   const groupChips = () => [['', 'Без группы'], ...groups.map(g => [g, g])].map(([v, l]) => `<button class="chip${d.group.trim() === v ? ' on' : ''}" style="--c:var(--accent)" data-action="w-group" data-v="${esc(v)}">${esc(l)}</button>`).join('');
   const preview = () => `<div class="wcard" style="--c:${d.color}"><span class="w-emoji">${esc(d.icon)}</span><span><span class="w-name" style="display:block">${esc(d.name || 'Название')}</span><span class="w-bal" style="display:block">${bal(parseNum(d.initStr), d.currency)}</span></span></div>`;
@@ -877,6 +914,7 @@ function openWallet(w) {
     <p class="field-hint">Счета одной группы на главной собираются в одну карточку.</p>
     <div class="lbl">Тип</div>
     <button class="switch-row" role="switch" aria-checked="${d.savings}" data-action="w-sav"><span class="txt">Накопления<small>Депозит или копилка: не входит в «На руках» и не предлагается при тратах</small></span><span class="sw"></span></button>
+    <div id="intBox">${intBox()}</div>
     <div class="lbl">Валюта</div><div class="seg">${Object.keys(CUR).map(c => `<button class="${c === d.currency ? 'on' : ''}" data-action="w-cur" data-v="${c}">${c} ${CUR[c]}</button>`).join('')}</div>
     ${d.currency !== S.base ? '<p class="field-hint">Кошельки не в тенге не входят в общий итог и статистику.</p>' : ''}
     <button class="primary" data-action="w-save">${d.id ? 'Сохранить' : 'Создать кошелёк'}</button>
@@ -888,13 +926,16 @@ function openWallet(w) {
       if (e.target.id === 'wName') { d.name = e.target.value; upd(); }
       if (e.target.id === 'wInit') { d.initStr = e.target.value; upd(); }
       if (e.target.id === 'wGroup') { d.group = e.target.value; $('#wGroups').innerHTML = groupChips(); }
+      if (e.target.id === 'wRate') { d.int.rateStr = e.target.value; const x = $('#wEst'); if (x) x.textContent = estTxt(); }
+      if (e.target.id === 'wDay') { d.int.day = +e.target.value; const x = $('#wEst'); if (x) x.textContent = estTxt(); }
     },
     action(a, el) {
       if (a === 'emoji-more') { d.allIcons = !d.allIcons; $('#emojiBox').innerHTML = emojiBox(d, 'w-icon'); return true; }
       if (a === 'w-icon') { d.icon = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'w-color') { d.color = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'w-group') { d.group = el.dataset.v; $('#wGroup').value = ''; $('#wGroups').innerHTML = groupChips(); return true; }
-      if (a === 'w-sav') { d.savings = !d.savings; el.setAttribute('aria-checked', d.savings); return true; }
+      if (a === 'w-sav') { d.savings = !d.savings; el.setAttribute('aria-checked', d.savings); $('#intBox').innerHTML = intBox(); return true; }
+      if (a === 'w-int') { d.int.on = !d.int.on; $('#intBox').innerHTML = intBox(); if (d.int.on) { const r = $('#wRate'); if (r && !d.int.rateStr) r.focus(); } return true; }
       if (a === 'w-cur') { d.currency = el.dataset.v; rerenderSheet(body()); return true; }
       if (a === 'w-save') {
         const name = d.name.trim(); if (!name) { toast('Введите название'); $('#wName').focus(); return true; }
@@ -903,6 +944,12 @@ function openWallet(w) {
           if (old.currency !== d.currency && S.tx.some(t => t.walletId === d.id || t.toWalletId === d.id) && !confirm('В кошельке уже есть операции. Сменить валюту? Суммы останутся теми же числами.')) return true;
         }
         const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, currency: d.currency, initial: parseNum(d.initStr), group: d.group.trim(), savings: d.savings };
+        const oldInt = d.id && getW(d.id) && getW(d.id).interest;
+        if (d.savings && d.int.on) {
+          const rate = parseNum(d.int.rateStr);
+          if (!(rate > 0) || rate > 100) { toast('Укажите ставку, например 14'); const r = $('#wRate'); if (r) r.focus(); return true; }
+          rec.interest = { on: true, rate, day: d.int.day, last: (oldInt && oldInt.on && oldInt.last) || today() };
+        } else if (oldInt) rec.interest = { ...oldInt, on: false };
         const i = S.wallets.findIndex(x => x.id === rec.id);
         if (i >= 0) S.wallets[i] = rec; else S.wallets.push(rec);
         save(); closeSheet(); render(); toast(d.id ? 'Сохранено' : 'Кошелёк создан');
@@ -1223,6 +1270,107 @@ function openDebtEdit(d) {
   };
 }
 
+/* ===== Блокировка Face ID (через ключ входа WebAuthn) ===== */
+const LOCK_KEY = 'tiyn-lock';
+let LK = (() => { try { return JSON.parse(localStorage.getItem(LOCK_KEY)) || {}; } catch (e) { return {}; } })();
+const saveLock = () => { try { localStorage.setItem(LOCK_KEY, JSON.stringify(LK)); } catch (e) {} };
+let FACE_OK = false, hiddenAt = 0;
+const b64u = buf => btoa(String.fromCharCode(...new Uint8Array(buf))).replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/, '');
+const unb64u = s => { s = s.replace(/-/g, '+').replace(/_/g, '/'); while (s.length % 4) s += '='; return Uint8Array.from(atob(s), c => c.charCodeAt(0)); };
+const rnd = n => crypto.getRandomValues(new Uint8Array(n));
+async function canFaceId() {
+  try { return !!(window.PublicKeyCredential && window.isSecureContext && await PublicKeyCredential.isUserVerifyingPlatformAuthenticatorAvailable()); } catch (e) { return false; }
+}
+async function createKey() {
+  const cred = await navigator.credentials.create({ publicKey: {
+    challenge: rnd(32), rp: { name: 'Тиын' },
+    user: { id: rnd(16), name: 'Тиын', displayName: 'Тиын: вход в приложение' },
+    pubKeyCredParams: [{ type: 'public-key', alg: -7 }, { type: 'public-key', alg: -257 }],
+    authenticatorSelection: { authenticatorAttachment: 'platform', userVerification: 'required', residentKey: 'preferred' },
+    timeout: 60000 } });
+  return b64u(cred.rawId);
+}
+async function verifyKey() {
+  await navigator.credentials.get({ publicKey: { challenge: rnd(32), allowCredentials: [{ type: 'public-key', id: unb64u(LK.id), transports: ['internal', 'hybrid'] }], userVerification: 'required', timeout: 60000 } });
+}
+async function enableLock() {
+  try { LK.id = await createKey(); LK.on = true; LK.asked = true; saveLock(); toast('Face ID включён'); return true; }
+  catch (e) { toast('Face ID не включён'); return false; }
+}
+function showLock() { const l = $('#lock'); if (!l.hidden) return; $('#lockMsg').textContent = 'Разблокируйте с помощью Face ID'; l.hidden = false; }
+async function tryUnlock(auto) {
+  try { await verifyKey(); $('#lock').hidden = true; }
+  catch (e) { if (!auto) $('#lockMsg').textContent = 'Не удалось разблокировать. Нажмите кнопку ещё раз.'; }
+}
+$('#lockBtn').addEventListener('click', () => tryUnlock(false));
+$('#lockHelp').addEventListener('click', async () => {
+  if (!confirm('Создать новый ключ Face ID? Это нужно, если ключ был удалён из «Паролей». iPhone попросит Face ID или код-пароль.')) return;
+  try { LK.id = await createKey(); saveLock(); $('#lock').hidden = true; toast('Новый ключ создан'); }
+  catch (e) { $('#lockMsg').textContent = 'Не получилось создать ключ. Попробуйте ещё раз.'; }
+});
+document.addEventListener('visibilitychange', () => {
+  if (document.hidden) { hiddenAt = Date.now(); return; }
+  runInterest();
+  if (LK.on && LK.id && hiddenAt && Date.now() - hiddenAt > 60000) { showLock(); tryUnlock(true); }
+});
+function offerLock() {
+  if (LK.on || LK.asked || !FACE_OK || ctx || !$('#lock').hidden) return;
+  LK.asked = true; saveLock();
+  openSheet(`<div class="lock-intro">
+    <div class="big-ico"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1"/><path d="M9 15.5c1.7 1.3 4.3 1.3 6 0"/></svg></div>
+    <h3>Защитить приложение Face ID?</h3>
+    <p>Тогда ваши траты увидите только вы: при открытии Тиын попросит Face ID.</p>
+    <p style="font-size:13px">iPhone предложит сохранить ключ входа для сайта. Нажмите «Продолжить». Выключить защиту можно в Настройках.</p></div>
+    <button class="primary" data-action="lk-yes">Включить Face ID</button>
+    <button class="secondary" data-action="lk-no">Не сейчас</button>`);
+  ctx = { action(a) {
+    if (a === 'lk-yes') { enableLock().then(ok => { closeSheet(); if (ui.tab === 'settings') render(); }); return true; }
+    if (a === 'lk-no') { closeSheet(); return true; }
+  } };
+}
+
+/* ===== Проценты по вкладам ===== */
+function balanceAt(wId, ds) {
+  const w = getW(wId); let b = +w.initial || 0;
+  S.tx.forEach(t => {
+    if (t.date > ds) return;
+    if (t.type === 'expense' && t.walletId === wId) b -= t.amount;
+    else if (t.type === 'income' && t.walletId === wId) b += t.amount;
+    else if (t.type === 'debt' && t.walletId === wId) b += t.flow * t.amount;
+    else if (t.type === 'transfer') { if (t.walletId === wId) b -= t.amount; if (t.toWalletId === wId) b += (t.amountTo ?? t.amount); }
+  });
+  return b;
+}
+function dueDates(last, day, upto) {
+  const out = []; let [y, m] = last.split('-').map(Number);
+  for (let k = 0; k < 240; k++) {
+    const ds = y + '-' + pad2(m) + '-' + pad2(Math.min(day, new Date(y, m, 0).getDate()));
+    if (ds > upto) break;
+    if (ds > last) out.push(ds);
+    if (++m > 12) { m = 1; y++; }
+  }
+  return out;
+}
+function interestCat() {
+  let c = S.categories.find(x => x.type === 'income' && x.name === 'Проценты');
+  if (!c) { c = { id: uid(), name: 'Проценты', icon: '📈', color: '#A67C00', type: 'income' }; S.categories.push(c); }
+  return c;
+}
+function runInterest() {
+  const t = today(); let added = 0, cur = S.base, changed = false;
+  S.wallets.forEach(w => {
+    const it = w.interest;
+    if (!w.savings || !it || !it.on || !(it.rate > 0)) return;
+    dueDates(it.last || t, it.day || 1, t).forEach(ds => {
+      const amt = Math.round(balanceAt(w.id, ds) * it.rate / 100 / 12 * 100) / 100;
+      if (amt > 0) { S.tx.push({ id: uid(), type: 'income', amount: amt, walletId: w.id, categoryId: interestCat().id, date: ds, note: 'Проценты по вкладу', auto: true, createdAt: Date.now() }); added += amt; cur = w.currency; }
+      it.last = ds; changed = true;
+    });
+  });
+  if (changed) { save(); render(); }
+  if (added > 0) setTimeout(() => toast('Начислены проценты: +' + money(added, cur)), 700);
+}
+
 /* ===== Резервная копия ===== */
 async function exportData() {
   const name = 'tiyn-' + today() + '.json';
@@ -1298,6 +1446,11 @@ document.addEventListener('click', e => {
     case 'month': ui.month = addMonths(ui.month, +el.dataset.v); render(); break;
     case 'stat-cat': ui.statCat = ui.statCat === el.dataset.v ? null : el.dataset.v; render(); break;
     case 'goto-month': ui.month = el.dataset.v; render(); break;
+    case 'lock-toggle':
+      if (!FACE_OK) break;
+      if (!LK.on) enableLock().then(() => render());
+      else verifyKey().then(() => { LK.on = false; saveLock(); render(); toast('Face ID выключен'); }).catch(() => toast('Чтобы выключить, подтвердите Face ID'));
+      break;
     case 'export': exportData(); break;
     case 'import': $('#importFile').click(); break;
     case 'reset':
@@ -1309,7 +1462,10 @@ document.addEventListener('input', e => { if (ctx && ctx.input) ctx.input(e); })
 document.addEventListener('change', e => { if (ctx && ctx.input && e.target.type === 'date') ctx.input(e); });
 document.addEventListener('keydown', e => { if (ctx && ctx.key) ctx.key(e); if (e.key === 'Escape' && ctx) closeSheet(); });
 
+if (LK.on && LK.id) { $('#lock').hidden = false; setTimeout(() => tryUnlock(true), 350); }
 render();
+runInterest();
+canFaceId().then(ok => { FACE_OK = ok; if (ui.tab === 'settings') render(); if (ok) setTimeout(offerLock, 900); });
 if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
 if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
 </script>
