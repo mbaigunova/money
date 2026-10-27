@@ -1,0 +1,767 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Тиын">
+<meta name="theme-color" content="#F2F5F7" media="(prefers-color-scheme: light)">
+<meta name="theme-color" content="#0E151D" media="(prefers-color-scheme: dark)">
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Тиын</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Onest:wght@400;500;600&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#F2F5F7;--surface:#FFFFFF;--surface-2:#E6EBEF;--ink:#14202E;--muted:#667385;--line:#DCE3E9;
+  --accent:#0B8FA3;--on-accent:#FFFFFF;--expense:#C9453F;--income:#1F8656;
+  --shadow:0 1px 2px rgba(20,32,46,.05),0 6px 18px rgba(20,32,46,.06);
+  --num:'Unbounded',ui-rounded,'SF Pro Rounded',-apple-system,system-ui,sans-serif;
+  --text:'Onest',-apple-system,BlinkMacSystemFont,system-ui,'Segoe UI',Roboto,sans-serif;
+  color-scheme:light;
+}
+@media (prefers-color-scheme:dark){:root{
+  --bg:#0E151D;--surface:#17212C;--surface-2:#223040;--ink:#EAF0F5;--muted:#93A0AF;--line:#2A3846;
+  --accent:#2BB6CA;--on-accent:#06222A;--expense:#F07069;--income:#4CC48C;
+  --shadow:none;color-scheme:dark;
+}}
+*{box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);font:16px/1.45 var(--text);-webkit-font-smoothing:antialiased;overscroll-behavior-y:none}
+button{font:inherit;color:inherit;cursor:pointer}
+:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+[hidden]{display:none!important}
+#view{max-width:560px;margin:0 auto;padding:calc(env(safe-area-inset-top,0px) + 14px) 0 calc(env(safe-area-inset-bottom,0px) + 104px)}
+
+/* hero */
+.hero{padding:6px 20px 18px}
+.hero-label{color:var(--muted);font-size:14px}
+.hero-total{font:700 clamp(34px,10.5vw,48px)/1.05 var(--num);letter-spacing:-.025em;margin-top:2px;word-break:break-word}
+.hero-total .cur,.amount .cur{font-weight:500;color:var(--muted);font-size:.58em;margin-left:.18em}
+.hero-other{margin-top:6px;font:500 15px var(--num);color:var(--muted)}
+.hero-month{margin-top:12px;font-size:15px;color:var(--muted)}
+.hero-month b{font-weight:600;color:var(--ink)}
+.hero-month .inc{color:var(--income)}
+
+/* wallets */
+.wallets{display:flex;gap:10px;overflow-x:auto;padding:4px 20px 10px;scroll-snap-type:x proximity;scrollbar-width:none;scroll-padding:0 20px}
+.wallets::-webkit-scrollbar,.cats::-webkit-scrollbar,.chips::-webkit-scrollbar{display:none}
+.wcard{flex:0 0 150px;height:106px;border-radius:20px;padding:12px 14px;color:#fff;background:var(--c);display:flex;flex-direction:column;justify-content:space-between;scroll-snap-align:start;border:0;text-align:left;position:relative;overflow:hidden;transition:opacity .2s,transform .2s}
+.wcard::after{content:"";position:absolute;width:120px;height:120px;border-radius:50%;right:-46px;top:-52px;background:rgba(255,255,255,.14);pointer-events:none}
+.wcard::before{content:"";position:absolute;width:70px;height:70px;border-radius:50%;right:-18px;bottom:-34px;background:rgba(0,0,0,.08);pointer-events:none}
+.wcard .w-emoji{font-size:24px;line-height:1;position:relative;z-index:1}
+.wcard .w-name{font-size:13px;opacity:.92;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}
+.wcard .w-bal{font:600 16px/1.2 var(--num);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1}
+.wallets.filtering .wcard{opacity:.45}
+.wallets.filtering .wcard.on{opacity:1;transform:translateY(-2px)}
+.wcard.add{background:transparent;border:1.5px dashed var(--line);color:var(--muted);align-items:center;justify-content:center;gap:4px;font-size:14px}
+.wcard.add::after,.wcard.add::before{display:none}
+.wcard.add .plus{font-size:26px;line-height:1}
+
+/* banner */
+.banner{margin:6px 12px 0;padding:12px 14px;border-radius:16px;background:var(--surface);display:flex;align-items:center;gap:12px;font-size:14px;box-shadow:var(--shadow)}
+.banner span{flex:1;color:var(--muted)}
+.banner button{border:0;background:var(--accent);color:var(--on-accent);border-radius:10px;padding:8px 12px;font-weight:600;font-size:14px}
+
+/* sections & lists */
+.sec-head{display:flex;justify-content:space-between;align-items:center;gap:12px;padding:20px 20px 4px}
+.sec-head h2{font:600 19px/1.2 var(--text);margin:0}
+.link-btn{background:none;border:0;color:var(--accent);font:500 16px var(--text);padding:6px 2px}
+.link-btn.strong{font-weight:600}
+.day{padding:0 12px}
+.day-head{display:flex;justify-content:space-between;color:var(--muted);font-size:13px;padding:14px 8px 6px}
+.list{background:var(--surface);border-radius:18px;overflow:hidden;box-shadow:var(--shadow)}
+.row{display:flex;align-items:center;gap:12px;padding:11px 14px;width:100%;background:none;border:0;text-align:left;position:relative}
+.row+.row::before{content:"";position:absolute;top:0;left:66px;right:0;height:1px;background:var(--line)}
+.row:active{background:var(--surface-2)}
+.ico{width:40px;height:40px;border-radius:13px;display:grid;place-items:center;font-size:20px;flex:none;line-height:1}
+.row-main{flex:1;min-width:0}
+.row-title{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.row-sub{font-size:13px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.amt{font:600 14.5px var(--num);white-space:nowrap}
+.amt.income{color:var(--income)}
+.amt.transfer{color:var(--muted)}
+.more{display:block;margin:14px auto 0;background:none;border:0;color:var(--accent);font-weight:500;padding:10px}
+.empty{margin:16px 12px;padding:30px 22px;text-align:center;color:var(--muted);background:var(--surface);border-radius:18px;box-shadow:var(--shadow)}
+.empty p{margin:0 0 14px}
+.empty .big{font-size:36px;margin-bottom:6px}
+
+/* buttons */
+.primary{display:block;width:100%;height:54px;border:0;border-radius:16px;background:var(--accent);color:var(--on-accent);font:600 17px var(--text);margin-top:12px}
+.primary.inline{width:auto;height:44px;padding:0 20px;margin:0 auto;font-size:15px;border-radius:12px}
+.danger{display:block;width:100%;height:48px;border:0;border-radius:14px;background:none;color:var(--expense);font:500 16px var(--text);margin-top:6px}
+
+/* nav */
+.nav{position:fixed;left:0;right:0;bottom:0;z-index:20;background:var(--surface);border-top:1px solid var(--line);padding-bottom:env(safe-area-inset-bottom,0px)}
+.nav-in{max-width:560px;margin:0 auto;display:flex}
+.nav button{flex:1;border:0;background:none;padding:8px 0 7px;display:flex;flex-direction:column;align-items:center;gap:2px;font-size:11px;font-weight:500;color:var(--muted)}
+.nav button.on{color:var(--accent)}
+.nav svg{width:24px;height:24px}
+.fab{position:fixed;z-index:21;right:max(18px,calc(50% - 262px));bottom:calc(env(safe-area-inset-bottom,0px) + 74px);width:60px;height:60px;border-radius:50%;border:0;background:var(--accent);color:var(--on-accent);display:grid;place-items:center;box-shadow:0 6px 20px rgba(11,143,163,.35)}
+.fab svg{width:28px;height:28px}
+.fab:active{transform:scale(.94)}
+
+/* stats */
+.month-sw{display:flex;align-items:center;justify-content:space-between;padding:0 8px 10px}
+.month-sw h1{font:600 19px var(--num);margin:0;letter-spacing:-.01em}
+.month-sw button{width:44px;height:44px;border:0;background:none;font-size:26px;color:var(--ink);border-radius:12px}
+.month-sw button:disabled{opacity:.25}
+.pad-x{padding:0 12px}
+.card{background:var(--surface);border-radius:20px;margin:12px 12px 0;padding:18px;box-shadow:var(--shadow)}
+.sum3{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+.sum3 div{min-width:0}
+.sum3 small{display:block;color:var(--muted);font-size:13px}
+.sum3 strong{display:block;font:600 14px var(--num);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;margin-top:2px}
+.donut{display:block;margin:4px auto 8px;width:210px;height:210px}
+.compare{text-align:center;color:var(--muted);font-size:14px;margin:0}
+.bars{display:flex;align-items:flex-end;gap:10px;height:130px;padding-top:6px}
+.bars .b{flex:1;display:flex;flex-direction:column;align-items:center;gap:6px;height:100%;justify-content:flex-end;border:0;background:none;padding:0}
+.bars .col{width:100%;max-width:38px;border-radius:8px 8px 4px 4px;background:var(--surface-2);min-height:4px}
+.bars .b.on .col{background:var(--accent)}
+.bars .b span{font-size:12px;color:var(--muted)}
+.bars .b.on span{color:var(--ink);font-weight:600}
+.card h3{margin:0 0 12px;font:600 16px var(--text)}
+.crow{display:flex;align-items:center;gap:12px;padding:9px 0}
+.crow .row-main{display:flex;flex-direction:column;gap:6px}
+.crow .top{display:flex;justify-content:space-between;gap:8px}
+.crow .top b{font-weight:500;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.crow .top span{font:600 14px var(--num);white-space:nowrap}
+.bar{height:6px;border-radius:3px;background:var(--surface-2);overflow:hidden}
+.bar i{display:block;height:100%;border-radius:3px;background:var(--c)}
+.pct{font-size:12px;color:var(--muted);width:36px;text-align:right;flex:none}
+.note{color:var(--muted);font-size:13px;text-align:center;margin:14px 20px 0}
+
+/* settings */
+.set-group{padding:0 12px}
+.hint{color:var(--muted);font-size:13px;margin:10px 8px 0;line-height:1.5}
+.row.danger-row .row-title{color:var(--expense)}
+.row .add-ico{background:var(--surface-2);color:var(--accent);font-size:22px}
+
+/* sheets */
+.overlay{position:fixed;inset:0;background:rgba(8,14,22,.46);z-index:50;opacity:0;transition:opacity .22s}
+.overlay.show{opacity:1}
+.sheet{position:fixed;left:0;right:0;bottom:0;margin:0 auto;max-width:560px;max-height:calc(100% - env(safe-area-inset-top,0px) - 16px);overflow-y:auto;-webkit-overflow-scrolling:touch;background:var(--bg);border-radius:24px 24px 0 0;z-index:51;transform:translateY(100%);transition:transform .3s cubic-bezier(.2,.85,.25,1);padding:6px 16px calc(env(safe-area-inset-bottom,0px) + 16px);overscroll-behavior:contain}
+.sheet.show{transform:none}
+@media (prefers-reduced-motion:reduce){.sheet,.overlay,.wcard{transition:none}}
+.grab{width:40px;height:5px;border-radius:3px;background:var(--line);margin:4px auto 8px}
+.sheet-top{display:grid;grid-template-columns:80px 1fr 80px;align-items:center;margin-bottom:12px}
+.sheet-top h3{margin:0;font:600 17px var(--text);text-align:center}
+.sheet-top .link-btn:first-child{justify-self:start}
+.sheet-top .link-btn:last-child{justify-self:end}
+.seg{display:flex;background:var(--surface-2);border-radius:12px;padding:3px}
+.seg button{flex:1;border:0;background:none;padding:8px 4px;border-radius:10px;font:500 15px var(--text);color:var(--muted)}
+.seg button.on{background:var(--surface);color:var(--ink);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+.amount{font:700 42px/1.1 var(--num);text-align:center;padding:18px 0 4px;letter-spacing:-.025em;word-break:break-all}
+.amount[data-type="income"]{color:var(--income)}
+.lbl{font-size:13px;color:var(--muted);margin:14px 2px 6px}
+.cats{display:grid;grid-auto-flow:column;grid-template-rows:repeat(2,auto);grid-auto-columns:78px;gap:2px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:0 16px}
+.cat{border:0;background:none;padding:8px 2px 6px;border-radius:14px;display:flex;flex-direction:column;align-items:center;gap:5px;font:12px/1.2 var(--text);text-align:center}
+.cat span{display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;min-height:2.4em}
+.cat.on{background:var(--surface)}
+.cat.on .ico{box-shadow:0 0 0 2px var(--c)}
+.chips{display:flex;gap:8px;overflow-x:auto;scrollbar-width:none;margin:0 -16px;padding:2px 16px}
+.chip{flex:none;border:1.5px solid var(--line);background:var(--surface);border-radius:999px;padding:7px 13px 7px 10px;font:500 14px var(--text);display:flex;gap:6px;align-items:center}
+.chip.on{border-color:var(--c)}
+.row2{display:grid;grid-template-columns:auto 1fr;gap:8px;margin-top:14px}
+.input{width:100%;border:1.5px solid var(--line);background:var(--surface);border-radius:12px;padding:11px 12px;font:16px var(--text);color:var(--ink);min-height:46px;-webkit-appearance:none;appearance:none}
+.input:focus{outline:none;border-color:var(--accent)}
+.input.date{width:auto;min-width:140px}
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-top:14px}
+.numpad button{height:52px;border:0;border-radius:14px;background:var(--surface);font:500 22px var(--num);box-shadow:var(--shadow)}
+.numpad button:active{background:var(--surface-2)}
+.emojis{display:grid;grid-template-columns:repeat(8,1fr);gap:4px}
+.emojis button{aspect-ratio:1;border:0;background:none;border-radius:10px;font-size:23px;line-height:1;padding:0}
+.emojis button.on{background:var(--surface);box-shadow:inset 0 0 0 2px var(--accent)}
+.swatches{display:flex;flex-wrap:wrap;gap:12px;padding:4px 2px}
+.swatches button{width:34px;height:34px;border-radius:50%;border:0;background:var(--c)}
+.swatches button.on{box-shadow:0 0 0 3px var(--bg),0 0 0 5px var(--c)}
+.wprev{display:flex;justify-content:center;margin:4px 0 4px}
+.wprev .wcard{flex-basis:180px;width:180px;height:116px}
+.cprev{display:flex;align-items:center;gap:12px;justify-content:center;margin:4px 0;font-weight:600;font-size:17px}
+.cprev .ico{width:52px;height:52px;font-size:28px;border-radius:16px}
+.field-hint{font-size:12.5px;color:var(--muted);margin:6px 2px 0}
+
+.toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1;transform:translate(-50%,0)}
+</style>
+</head>
+<body>
+<main id="view"></main>
+
+<button class="fab" data-action="add-tx" aria-label="Добавить операцию">
+  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>
+</button>
+
+<nav class="nav"><div class="nav-in">
+  <button data-action="tab" data-v="home"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><rect x="3" y="6" width="18" height="14" rx="3"/><path d="M3 10h18M16 15h2"/><path d="M6 6l9-3 1.5 3"/></svg>Кошельки</button>
+  <button data-action="tab" data-v="stats"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M12 3a9 9 0 1 0 9 9h-9z"/><path d="M15 3.5A9 9 0 0 1 20.5 9H15z"/></svg>Статистика</button>
+  <button data-action="tab" data-v="settings"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round"><path d="M4 7h10M18 7h2M4 17h4M12 17h8"/><circle cx="16" cy="7" r="2"/><circle cx="10" cy="17" r="2"/></svg>Настройки</button>
+</div></nav>
+
+<input type="file" id="importFile" accept="application/json,.json" hidden>
+<div class="toast" id="toast"></div>
+
+<script>
+/* ===== Константы ===== */
+const KEY = 'tiyn-v1';
+const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
+const COLORS = ['#C92A2A','#0B8FA3','#1F8656','#3B5BDB','#7048E8','#C2255C','#E8590C','#A67C00','#2B3A4A','#5C940D','#9C36B5','#1971C2'];
+const EMOJI = ['💳','🏦','💵','💶','🪙','💰','🐷','👛','👜','🎒','💎','📈','🏠','🚗','✈️','🎓',
+  '🛒','🍽️','☕','🍔','🍕','🥗','🍎','🧁','🚕','🚌','⛽','🅿️','💡','💧','🔥','📱',
+  '💻','🌐','💊','🏥','🦷','👗','👟','💄','💅','💇','🎬','🎮','🎵','📚','✏️','🎁',
+  '🎉','🐶','🐱','👶','🧸','🏋️','⚽','🧘','🔁','📺','🧾','🛠️','🧹','🪴','🏖️','🏨',
+  '💼','💸','↩️','🤝','📦','❤️','⭐','🇰🇿','🇺🇸','🇪🇺','🇷🇺','🇹🇷'];
+const MN = ['Январь','Февраль','Март','Апрель','Май','Июнь','Июль','Август','Сентябрь','Октябрь','Ноябрь','Декабрь'];
+const MG = ['января','февраля','марта','апреля','мая','июня','июля','августа','сентября','октября','ноября','декабря'];
+const MP = ['январе','феврале','марте','апреле','мае','июне','июле','августе','сентябре','октябре','ноябре','декабре'];
+const MS = ['янв','фев','мар','апр','май','июн','июл','авг','сен','окт','ноя','дек'];
+const WD = ['вс','пн','вт','ср','чт','пт','сб'];
+const NO_CAT = { name:'Без категории', icon:'❔', color:'#868E96' };
+
+/* ===== Утилиты ===== */
+const $ = s => document.querySelector(s);
+const uid = () => Date.now().toString(36) + Math.random().toString(36).slice(2, 7);
+const pad2 = n => String(n).padStart(2, '0');
+const esc = s => String(s ?? '').replace(/[&<>"']/g, c => ({ '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;' }[c]));
+const nf = new Intl.NumberFormat('ru-RU', { maximumFractionDigits: 2 });
+const num = n => nf.format(Math.abs(n));
+function money(n, cur = 'KZT', sign = '') { return sign + num(n) + '\u00a0' + (CUR[cur] || cur); }
+function bal(n, cur) { return (n < 0 ? '−' : '') + money(n, cur); }
+function today() { const d = new Date(); return d.getFullYear() + '-' + pad2(d.getMonth() + 1) + '-' + pad2(d.getDate()); }
+function addMonths(ym, k) { let [y, m] = ym.split('-').map(Number); m += k; while (m < 1) { m += 12; y--; } while (m > 12) { m -= 12; y++; } return y + '-' + pad2(m); }
+function tint(hex, a) { const h = hex.replace('#', ''); const r = parseInt(h.slice(0,2),16), g = parseInt(h.slice(2,4),16), b = parseInt(h.slice(4,6),16); return `rgba(${r},${g},${b},${a})`; }
+function ico(emoji, color) { return `<span class="ico" style="background:${tint(color, .17)}">${esc(emoji)}</span>`; }
+function parseNum(s) { const n = parseFloat(String(s || '').replace(/\s/g, '').replace(',', '.')); return isFinite(n) ? n : 0; }
+function toast(msg) { const t = $('#toast'); t.textContent = msg; t.classList.add('show'); clearTimeout(t._h); t._h = setTimeout(() => t.classList.remove('show'), 1800); }
+function dayLabel(ds) {
+  const t = today(), d = new Date(ds + 'T12:00:00'), y = new Date(); y.setDate(y.getDate() - 1);
+  const ys = y.getFullYear() + '-' + pad2(y.getMonth() + 1) + '-' + pad2(y.getDate());
+  if (ds === t) return 'Сегодня';
+  if (ds === ys) return 'Вчера';
+  let s = d.getDate() + ' ' + MG[d.getMonth()];
+  if (d.getFullYear() !== new Date().getFullYear()) s += ' ' + d.getFullYear();
+  return s + ', ' + WD[d.getDay()];
+}
+
+/* ===== Данные ===== */
+function seed() {
+  const c = (name, icon, color, type) => ({ id: uid(), name, icon, color, type });
+  return {
+    version: 1, base: 'KZT', lastWallet: null, lastBackup: null,
+    wallets: [
+      { id: uid(), name: 'Kaspi Gold', icon: '💳', color: '#C92A2A', currency: 'KZT', initial: 0 },
+      { id: uid(), name: 'Наличные', icon: '💵', color: '#1F8656', currency: 'KZT', initial: 0 },
+    ],
+    categories: [
+      c('Продукты','🛒','#1F8656','expense'), c('Кафе и рестораны','🍽️','#E8590C','expense'),
+      c('Транспорт','🚕','#A67C00','expense'), c('Дом и коммуналка','🏠','#1971C2','expense'),
+      c('Связь и интернет','📱','#3B5BDB','expense'), c('Здоровье','💊','#C92A2A','expense'),
+      c('Одежда','👗','#C2255C','expense'), c('Красота','💅','#9C36B5','expense'),
+      c('Развлечения','🎬','#7048E8','expense'), c('Подписки','🔁','#0B8FA3','expense'),
+      c('Образование','📚','#5C940D','expense'), c('Подарки','🎁','#C2255C','expense'),
+      c('Другое','📦','#2B3A4A','expense'),
+      c('Зарплата','💼','#1F8656','income'), c('Подработка','💰','#0B8FA3','income'),
+      c('Подарки','🎁','#C2255C','income'), c('Возврат','↩️','#1971C2','income'),
+      c('Другое','📦','#2B3A4A','income'),
+    ],
+    tx: [],
+  };
+}
+function load() {
+  try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); if (d && d.wallets && d.categories && d.tx) return d; } } catch (e) {}
+  return seed();
+}
+function save() {
+  try { localStorage.setItem(KEY, JSON.stringify(S)); }
+  catch (e) { toast('Не удалось сохранить данные'); }
+}
+let S = load();
+const ui = { tab: 'home', wallet: null, month: today().slice(0, 7), stype: 'expense', ctype: 'expense', limit: 120 };
+let ctx = null; // контекст открытого окна
+
+const getW = id => S.wallets.find(w => w.id === id);
+const getC = id => S.categories.find(c => c.id === id) || NO_CAT;
+function balances() {
+  const m = {};
+  S.wallets.forEach(w => m[w.id] = +w.initial || 0);
+  S.tx.forEach(t => {
+    if (t.type === 'expense' && t.walletId in m) m[t.walletId] -= t.amount;
+    else if (t.type === 'income' && t.walletId in m) m[t.walletId] += t.amount;
+    else if (t.type === 'transfer') {
+      if (t.walletId in m) m[t.walletId] -= t.amount;
+      if (t.toWalletId in m) m[t.toWalletId] += (t.amountTo ?? t.amount);
+    }
+  });
+  return m;
+}
+const inBase = t => { const w = getW(t.walletId); return w && w.currency === S.base; };
+const sortTx = (a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0));
+
+/* ===== Главная ===== */
+function walletCard(w, balance, extra = '') {
+  return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}">
+    <span class="w-emoji">${esc(w.icon)}</span>
+    <span><span class="w-name" style="display:block">${esc(w.name || 'Кошелёк')}</span>
+    <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span></span>
+  </button>`;
+}
+function txRow(t) {
+  const w = getW(t.walletId);
+  if (t.type === 'transfer') {
+    const to = getW(t.toWalletId);
+    const amt = (w && to && w.currency !== to.currency && t.amountTo != null)
+      ? money(t.amount, w.currency) + ' → ' + money(t.amountTo, to.currency)
+      : money(t.amount, w ? w.currency : S.base);
+    return `<button class="row" data-action="open-tx" data-id="${t.id}">${ico('🔁', '#667385')}
+      <span class="row-main"><span class="row-title" style="display:block">Перевод</span>
+      <span class="row-sub" style="display:block">${esc(w ? w.name : '?')} → ${esc(to ? to.name : '?')}${t.note ? ', ' + esc(t.note) : ''}</span></span>
+      <span class="amt transfer">${amt}</span></button>`;
+  }
+  const c = getC(t.categoryId);
+  const sub = [t.note, ui.wallet ? '' : (w ? w.name : '')].filter(Boolean).map(esc).join(', ');
+  return `<button class="row" data-action="open-tx" data-id="${t.id}">${ico(c.icon, c.color)}
+    <span class="row-main"><span class="row-title" style="display:block">${esc(c.name)}</span>
+    ${sub ? `<span class="row-sub" style="display:block">${sub}</span>` : ''}</span>
+    <span class="amt ${t.type}">${money(t.amount, w ? w.currency : S.base, t.type === 'income' ? '+' : '−')}</span></button>`;
+}
+function renderHome() {
+  const b = balances();
+  const totals = {};
+  S.wallets.forEach(w => totals[w.currency] = (totals[w.currency] || 0) + b[w.id]);
+  const others = Object.keys(totals).filter(c => c !== S.base);
+  const ym = today().slice(0, 7);
+  let mi = 0, me = 0;
+  S.tx.forEach(t => { if (!t.date.startsWith(ym) || !inBase(t)) return; if (t.type === 'expense') me += t.amount; else if (t.type === 'income') mi += t.amount; });
+  const mainTotal = totals[S.base] || 0;
+
+  let h = `<section class="hero">
+    <div class="hero-label">Всего на счетах</div>
+    <div class="hero-total">${mainTotal < 0 ? '−' : ''}${num(mainTotal)}<span class="cur">${CUR[S.base]}</span></div>
+    ${others.length ? `<div class="hero-other">${others.map(c => bal(totals[c], c)).join('   ')}</div>` : ''}
+    <div class="hero-month">${MN[+ym.slice(5) - 1]}: потрачено <b>${money(me, S.base)}</b>${mi ? `, получено <b class="inc">${money(mi, S.base)}</b>` : ''}</div>
+  </section>`;
+
+  h += `<div class="wallets${ui.wallet ? ' filtering' : ''}">
+    ${S.wallets.map(w => walletCard(w, b[w.id], ui.wallet === w.id ? ' on' : '')).join('')}
+    <button class="wcard add" data-action="add-wallet"><span class="plus">+</span>Кошелёк</button>
+  </div>`;
+
+  const days = S.lastBackup ? (Date.now() - S.lastBackup) / 864e5 : Infinity;
+  if (S.tx.length >= 10 && days > 14) {
+    h += `<div class="banner"><span>${S.lastBackup ? 'Копия данных не сохранялась больше двух недель' : 'Сохраните копию данных, чтобы не потерять их'}</span><button data-action="export">Сохранить</button></div>`;
+  }
+
+  const fw = ui.wallet && getW(ui.wallet);
+  let list = S.tx.filter(t => !fw || t.walletId === fw.id || t.toWalletId === fw.id).sort(sortTx);
+  h += `<div class="sec-head"><h2>${fw ? esc(fw.name) : 'Операции'}</h2>
+    ${fw ? `<span><button class="link-btn" data-action="edit-wallet" data-id="${fw.id}">Изменить</button>&nbsp;&nbsp;<button class="link-btn" data-action="filter" data-id="${fw.id}">Все</button></span>` : ''}</div>`;
+
+  if (!S.wallets.length) {
+    h += `<div class="empty"><div class="big">👛</div><p>Создайте первый кошелёк: карту, наличные или накопления.</p><button class="primary inline" data-action="add-wallet">Создать кошелёк</button></div>`;
+  } else if (!list.length) {
+    h += `<div class="empty"><div class="big">🧾</div><p>${fw ? 'В этом кошельке пока нет операций.' : 'Здесь появятся ваши траты и доходы.'}</p><button class="primary inline" data-action="add-tx">Добавить операцию</button></div>`;
+  } else {
+    const shown = list.slice(0, ui.limit);
+    const groups = [];
+    shown.forEach(t => { const g = groups[groups.length - 1]; if (g && g.date === t.date) g.items.push(t); else groups.push({ date: t.date, items: [t] }); });
+    groups.forEach(g => {
+      const spent = g.items.filter(t => t.type === 'expense' && inBase(t)).reduce((s, t) => s + t.amount, 0);
+      h += `<div class="day"><div class="day-head"><span>${dayLabel(g.date)}</span><span>${spent ? money(spent, S.base, '−') : ''}</span></div>
+        <div class="list">${g.items.map(txRow).join('')}</div></div>`;
+    });
+    if (list.length > ui.limit) h += `<button class="more" data-action="more">Показать ещё</button>`;
+  }
+  return h;
+}
+
+/* ===== Статистика ===== */
+function donut(items, total) {
+  const r = 80, C = 2 * Math.PI * r, sw = 24;
+  let acc = 0, segs = '';
+  if (total > 0) {
+    const gap = items.length > 1 ? 3 : 0;
+    items.forEach(it => {
+      const len = it.sum / total * C;
+      const vis = Math.max(len - gap, 0.5);
+      segs += `<circle r="${r}" cx="105" cy="105" fill="none" stroke="${it.c.color}" stroke-width="${sw}" stroke-dasharray="${vis} ${C - vis}" stroke-dashoffset="${-acc}" transform="rotate(-90 105 105)"/>`;
+      acc += len;
+    });
+  }
+  const label = ui.stype === 'expense' ? 'расходы' : 'доходы';
+  return `<svg class="donut" viewBox="0 0 210 210" role="img" aria-label="Диаграмма по категориям">
+    <circle r="${r}" cx="105" cy="105" fill="none" stroke="var(--surface-2)" stroke-width="${sw}"/>${segs}
+    <text x="105" y="104" text-anchor="middle" style="font:600 ${total >= 1e7 ? 17 : 20}px var(--num);fill:var(--ink)">${total ? num(total) + ' ' + CUR[S.base] : '0 ' + CUR[S.base]}</text>
+    <text x="105" y="128" text-anchor="middle" style="font:400 13px var(--text);fill:var(--muted)">${total ? label : 'нет операций'}</text></svg>`;
+}
+function monthSum(ym, type) { return S.tx.filter(t => t.type === type && t.date.startsWith(ym) && inBase(t)).reduce((s, t) => s + t.amount, 0); }
+function renderStats() {
+  const ym = ui.month, cur = today().slice(0, 7);
+  const [y, m] = ym.split('-').map(Number);
+  const inc = monthSum(ym, 'income'), exp = monthSum(ym, 'expense');
+  const net = inc - exp;
+  const groups = {};
+  S.tx.filter(t => t.type === ui.stype && t.date.startsWith(ym) && inBase(t)).forEach(t => {
+    const k = t.categoryId || '_'; (groups[k] = groups[k] || { c: getC(t.categoryId), sum: 0, n: 0 }); groups[k].sum += t.amount; groups[k].n++;
+  });
+  const items = Object.values(groups).sort((a, b) => b.sum - a.sum);
+  const total = ui.stype === 'expense' ? exp : inc;
+  const pym = addMonths(ym, -1), prev = monthSum(pym, ui.stype);
+
+  let cmp = '';
+  if (prev > 0 && total > 0) {
+    const d = Math.round((total - prev) / prev * 100);
+    cmp = d === 0 ? `Столько же, сколько в ${MP[+pym.slice(5) - 1]}` : `${d > 0 ? '↑ На ' + d + '% больше' : '↓ На ' + Math.abs(d) + '% меньше'}, чем в ${MP[+pym.slice(5) - 1]} (${money(prev, S.base)})`;
+  } else if (prev > 0) cmp = `В ${MP[+pym.slice(5) - 1]}: ${money(prev, S.base)}`;
+
+  const months = [-5, -4, -3, -2, -1, 0].map(k => addMonths(ym, k));
+  const vals = months.map(mm => monthSum(mm, ui.stype));
+  const max = Math.max(...vals, 1);
+
+  let h = `<div class="month-sw">
+    <button data-action="month" data-v="-1" aria-label="Предыдущий месяц">‹</button>
+    <h1>${MN[m - 1]}${y !== new Date().getFullYear() ? ' ' + y : ''}</h1>
+    <button data-action="month" data-v="1" aria-label="Следующий месяц" ${ym >= cur ? 'disabled' : ''}>›</button></div>
+  <div class="pad-x"><div class="seg">
+    <button class="${ui.stype === 'expense' ? 'on' : ''}" data-action="stype" data-v="expense">Расходы</button>
+    <button class="${ui.stype === 'income' ? 'on' : ''}" data-action="stype" data-v="income">Доходы</button></div></div>
+  <div class="card">
+    <div class="sum3">
+      <div><small>Доходы</small><strong style="color:var(--income)">${money(inc, S.base, inc ? '+' : '')}</strong></div>
+      <div><small>Расходы</small><strong>${money(exp, S.base, exp ? '−' : '')}</strong></div>
+      <div><small>Остаток</small><strong style="color:${net < 0 ? 'var(--expense)' : 'var(--ink)'}">${bal(net, S.base)}</strong></div>
+    </div>
+  </div>
+  <div class="card">${donut(items, total)}${cmp ? `<p class="compare">${cmp}</p>` : ''}</div>`;
+
+  if (items.length) {
+    h += `<div class="card"><h3>По категориям</h3>${items.map(it => {
+      const p = it.sum / total * 100;
+      return `<div class="crow">${ico(it.c.icon, it.c.color)}<div class="row-main">
+        <div class="top"><b>${esc(it.c.name)}</b><span>${money(it.sum, S.base)}</span></div>
+        <div class="bar" style="--c:${it.c.color}"><i style="width:${Math.max(p, 1.5)}%"></i></div></div>
+        <span class="pct">${p < 1 ? '<1' : Math.round(p)}%</span></div>`;
+    }).join('')}</div>`;
+  }
+
+  h += `<div class="card"><h3>${ui.stype === 'expense' ? 'Расходы' : 'Доходы'} за полгода</h3><div class="bars">
+    ${months.map((mm, i) => `<button class="b${mm === ym ? ' on' : ''}" data-action="goto-month" data-v="${mm}" aria-label="${MN[+mm.slice(5) - 1]}: ${money(vals[i], S.base)}">
+      <div class="col" style="height:${vals[i] / max * 100}%"></div><span>${MS[+mm.slice(5) - 1]}</span></button>`).join('')}
+  </div></div>`;
+
+  if (S.wallets.some(w => w.currency !== S.base)) h += `<p class="note">Статистика учитывает только кошельки в тенге.</p>`;
+  return h;
+}
+
+/* ===== Настройки ===== */
+function renderSettings() {
+  const b = balances();
+  const cats = S.categories.filter(c => c.type === ui.ctype);
+  const lb = S.lastBackup ? new Date(S.lastBackup) : null;
+  return `<div class="sec-head" style="padding-top:6px"><h2>Кошельки</h2></div>
+  <div class="set-group"><div class="list">
+    ${S.wallets.map(w => `<button class="row" data-action="edit-wallet" data-id="${w.id}">
+      <span class="ico" style="background:${w.color}">${esc(w.icon)}</span>
+      <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span><span class="row-sub" style="display:block">${w.currency}</span></span>
+      <span class="amt">${bal(b[w.id], w.currency)}</span></button>`).join('')}
+    <button class="row" data-action="add-wallet"><span class="ico add-ico">+</span><span class="row-main"><span class="row-title" style="color:var(--accent)">Добавить кошелёк</span></span></button>
+  </div></div>
+
+  <div class="sec-head"><h2>Категории</h2></div>
+  <div class="set-group"><div class="seg" style="margin-bottom:10px">
+    <button class="${ui.ctype === 'expense' ? 'on' : ''}" data-action="ctype" data-v="expense">Расходы</button>
+    <button class="${ui.ctype === 'income' ? 'on' : ''}" data-action="ctype" data-v="income">Доходы</button></div>
+  <div class="list">
+    ${cats.map(c => `<button class="row" data-action="edit-cat" data-id="${c.id}">${ico(c.icon, c.color)}
+      <span class="row-main"><span class="row-title" style="display:block">${esc(c.name)}</span></span></button>`).join('')}
+    <button class="row" data-action="add-cat"><span class="ico add-ico">+</span><span class="row-main"><span class="row-title" style="color:var(--accent)">Добавить категорию</span></span></button>
+  </div></div>
+
+  <div class="sec-head"><h2>Данные</h2></div>
+  <div class="set-group"><div class="list">
+    <button class="row" data-action="export">${ico('💾', '#0B8FA3')}<span class="row-main"><span class="row-title" style="display:block">Сохранить копию</span>
+      <span class="row-sub" style="display:block">${lb ? 'Последняя: ' + lb.getDate() + ' ' + MG[lb.getMonth()] + ' ' + lb.getFullYear() : 'Копия ещё не сохранялась'}</span></span></button>
+    <button class="row" data-action="import">${ico('📂', '#3B5BDB')}<span class="row-main"><span class="row-title" style="display:block">Восстановить из копии</span><span class="row-sub" style="display:block">Заменит текущие данные</span></span></button>
+    <button class="row danger-row" data-action="reset">${ico('🗑️', '#C92A2A')}<span class="row-main"><span class="row-title" style="display:block">Удалить все данные</span></span></button>
+  </div>
+  <p class="hint">Все данные хранятся только на этом телефоне. Сохраняйте копию раз в неделю или две: файл можно положить в iCloud Drive через «Сохранить в Файлы».</p>
+  <p class="hint">Операций: ${S.tx.length}.</p></div>`;
+}
+
+/* ===== Рендер ===== */
+function render() {
+  const v = $('#view');
+  v.innerHTML = ui.tab === 'home' ? renderHome() : ui.tab === 'stats' ? renderStats() : renderSettings();
+  document.querySelectorAll('.nav button').forEach(b => b.classList.toggle('on', b.dataset.v === ui.tab));
+  $('.fab').hidden = ui.tab === 'settings';
+}
+
+/* ===== Окна (sheets) ===== */
+function openSheet(html) {
+  closeSheet(true);
+  const ov = document.createElement('div'); ov.className = 'overlay'; ov.dataset.action = 'close-sheet';
+  const sh = document.createElement('div'); sh.className = 'sheet'; sh.setAttribute('role', 'dialog'); sh.setAttribute('aria-modal', 'true');
+  sh.innerHTML = '<div class="grab"></div>' + html;
+  document.body.append(ov, sh);
+  requestAnimationFrame(() => requestAnimationFrame(() => { ov.classList.add('show'); sh.classList.add('show'); }));
+  document.body.style.overflow = 'hidden';
+  return sh;
+}
+function closeSheet(instant) {
+  document.querySelectorAll('.overlay,.sheet').forEach(el => {
+    if (instant === true) return el.remove();
+    el.classList.remove('show'); setTimeout(() => el.remove(), 300);
+  });
+  document.body.style.overflow = '';
+  ctx = null;
+}
+function rerenderSheet(html) {
+  const sh = document.querySelector('.sheet.show') || document.querySelector('.sheet');
+  if (!sh) return;
+  const st = sh.scrollTop;
+  sh.innerHTML = '<div class="grab"></div>' + html;
+  sh.scrollTop = st;
+}
+
+/* --- операция --- */
+function amountView(str, cur) {
+  const [i, f] = str.split(',');
+  return nf.format(+i || 0) + (f !== undefined ? ',' + f : '') + `<span class="cur">${CUR[cur] || cur}</span>`;
+}
+function walletChips(sel) {
+  return S.wallets.map(w => `<button class="chip${w.id === sel ? ' on' : ''}" style="--c:${w.color}" data-action="pick-wallet" data-id="${w.id}">${esc(w.icon)} ${esc(w.name)}</button>`).join('');
+}
+function txBody(d) {
+  const w = getW(d.walletId), cur = w ? w.currency : S.base;
+  let mid;
+  if (d.type === 'transfer') {
+    const to = getW(d.toWalletId), diff = w && to && w.currency !== to.currency;
+    mid = `<div class="lbl">Откуда</div><div class="chips" data-group="from">${walletChips(d.walletId)}</div>
+      <div class="lbl">Куда</div><div class="chips" data-group="to">${walletChips(d.toWalletId)}</div>
+      ${diff ? `<div class="lbl">Зачислено в ${to.currency}</div><input class="input" id="amtTo" inputmode="decimal" value="${esc(d.amountToStr)}" placeholder="Сумма, которая пришла на ${esc(to.name)}">` : ''}`;
+  } else {
+    const cats = S.categories.filter(c => c.type === d.type);
+    mid = `<div class="lbl">Категория</div><div class="cats">${cats.map(c => `<button class="cat${c.id === d.categoryId ? ' on' : ''}" style="--c:${c.color}" data-action="pick-cat" data-id="${c.id}">${ico(c.icon, c.color)}<span>${esc(c.name)}</span></button>`).join('')}</div>
+      <div class="lbl">Кошелёк</div><div class="chips" data-group="from">${walletChips(d.walletId)}</div>`;
+  }
+  return `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Операция' : 'Новая операция'}</h3><span></span></div>
+    <div class="seg">${[['expense', 'Расход'], ['income', 'Доход'], ['transfer', 'Перевод']].map(([k, l]) => `<button class="${d.type === k ? 'on' : ''}" data-action="tx-type" data-v="${k}">${l}</button>`).join('')}</div>
+    <div class="amount" data-type="${d.type}" id="amtView">${amountView(d.amountStr, cur)}</div>
+    ${mid}
+    <div class="row2"><input class="input date" type="date" id="txDate" value="${d.date}" aria-label="Дата"><input class="input" id="txNote" placeholder="Заметка" value="${esc(d.note)}" maxlength="80"></div>
+    <div class="numpad">${['1','2','3','4','5','6','7','8','9',',','0','⌫'].map(k => `<button data-action="pad" data-k="${k}" aria-label="${k === '⌫' ? 'Стереть' : k}">${k}</button>`).join('')}</div>
+    <button class="primary" data-action="tx-save">${d.id ? 'Сохранить' : 'Добавить'}</button>
+    ${d.id ? '<button class="danger" data-action="tx-del">Удалить операцию</button>' : ''}`;
+}
+function openTx(t) {
+  if (!S.wallets.length) { toast('Сначала создайте кошелёк'); return openWallet(); }
+  const def = (S.lastWallet && getW(S.lastWallet)) ? S.lastWallet : (ui.wallet || S.wallets[0].id);
+  const d = t ? { ...t, amountStr: String(t.amount).replace('.', ','), amountToStr: t.amountTo != null ? String(t.amountTo).replace('.', ',') : '', note: t.note || '' }
+    : { id: null, type: 'expense', amountStr: '0', walletId: def, toWalletId: null, categoryId: null, date: today(), note: '', amountToStr: '' };
+  if (!d.toWalletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null;
+  openSheet(txBody(d));
+  const redraw = () => rerenderSheet(txBody(d));
+  ctx = {
+    input(e) { if (e.target.id === 'txNote') d.note = e.target.value; if (e.target.id === 'txDate') d.date = e.target.value; if (e.target.id === 'amtTo') d.amountToStr = e.target.value; },
+    action(a, el) {
+      if (a === 'tx-type') { d.type = el.dataset.v; d.categoryId = null; if (d.type === 'transfer' && d.toWalletId === d.walletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null; redraw(); return true; }
+      if (a === 'pad') {
+        const k = el.dataset.k; let s = d.amountStr;
+        if (k === '⌫') s = s.length > 1 ? s.slice(0, -1) : '0';
+        else if (k === ',') { if (!s.includes(',')) s += ','; }
+        else { if (s.includes(',') && s.split(',')[1].length >= 2) return true; if (s.replace(',', '').length >= 11) return true; s = s === '0' ? k : s + k; }
+        d.amountStr = s;
+        const w = getW(d.walletId); $('#amtView').innerHTML = amountView(s, w ? w.currency : S.base);
+        return true;
+      }
+      if (a === 'pick-cat') { d.categoryId = el.dataset.id; document.querySelectorAll('.sheet .cat').forEach(b => b.classList.toggle('on', b === el)); return true; }
+      if (a === 'pick-wallet') {
+        const grp = el.closest('.chips').dataset.group;
+        if (grp === 'to') d.toWalletId = el.dataset.id; else d.walletId = el.dataset.id;
+        if (d.type === 'transfer') { redraw(); return true; }
+        el.parentNode.querySelectorAll('.chip').forEach(b => b.classList.toggle('on', b === el));
+        const w = getW(d.walletId); $('#amtView').innerHTML = amountView(d.amountStr, w.currency);
+        return true;
+      }
+      if (a === 'tx-save') {
+        const amount = parseNum(d.amountStr);
+        if (!(amount > 0)) { toast('Введите сумму'); return true; }
+        const rec = { id: d.id || uid(), type: d.type, amount, walletId: d.walletId, date: d.date || today(), note: (d.note || '').trim(), createdAt: d.createdAt || Date.now() };
+        if (!getW(rec.walletId)) { toast('Выберите кошелёк'); return true; }
+        if (d.type === 'transfer') {
+          const from = getW(d.walletId), to = getW(d.toWalletId);
+          if (!to || to.id === from.id) { toast('Выберите другой кошелёк для перевода'); return true; }
+          rec.toWalletId = to.id;
+          if (from.currency !== to.currency) { const at = parseNum(d.amountToStr); if (!(at > 0)) { toast('Укажите, сколько зачислено'); return true; } rec.amountTo = at; }
+        } else {
+          if (!d.categoryId) { toast('Выберите категорию'); return true; }
+          rec.categoryId = d.categoryId;
+        }
+        const i = S.tx.findIndex(x => x.id === rec.id);
+        if (i >= 0) S.tx[i] = rec; else S.tx.push(rec);
+        S.lastWallet = rec.walletId; save(); closeSheet(); render();
+        toast(d.id ? 'Сохранено' : 'Добавлено');
+        return true;
+      }
+      if (a === 'tx-del') {
+        if (!confirm('Удалить эту операцию?')) return true;
+        S.tx = S.tx.filter(x => x.id !== d.id); save(); closeSheet(); render(); toast('Удалено');
+        return true;
+      }
+    }
+  };
+}
+
+/* --- кошелёк --- */
+function openWallet(w) {
+  const d = w ? { ...w, initStr: w.initial ? String(w.initial).replace('.', ',') : '' }
+    : { id: null, name: '', icon: '💳', color: COLORS[(S.wallets.length + 1) % COLORS.length], currency: S.base, initStr: '' };
+  const preview = () => `<div class="wcard" style="--c:${d.color}"><span class="w-emoji">${esc(d.icon)}</span><span><span class="w-name" style="display:block">${esc(d.name || 'Название')}</span><span class="w-bal" style="display:block">${bal(parseNum(d.initStr), d.currency)}</span></span></div>`;
+  const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Кошелёк' : 'Новый кошелёк'}</h3><button class="link-btn strong" data-action="w-save">Готово</button></div>
+    <div class="wprev" id="wPrev">${preview()}</div>
+    <div class="lbl">Название</div><input class="input" id="wName" value="${esc(d.name)}" placeholder="Например, Kaspi Gold" maxlength="30">
+    <div class="lbl">Иконка</div><div class="emojis">${EMOJI.map(e => `<button class="${e === d.icon ? 'on' : ''}" data-action="w-icon" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(c => `<button class="${c === d.color ? 'on' : ''}" style="--c:${c}" data-action="w-color" data-v="${c}" aria-label="Цвет ${c}"></button>`).join('')}</div>
+    <div class="lbl">Начальный баланс</div><input class="input" id="wInit" inputmode="decimal" value="${esc(d.initStr)}" placeholder="0">
+    <p class="field-hint">Сколько денег в кошельке на момент начала учёта.</p>
+    <div class="lbl">Валюта</div><div class="seg">${Object.keys(CUR).map(c => `<button class="${c === d.currency ? 'on' : ''}" data-action="w-cur" data-v="${c}">${c} ${CUR[c]}</button>`).join('')}</div>
+    ${d.currency !== S.base ? '<p class="field-hint">Кошельки не в тенге не входят в общий итог и статистику.</p>' : ''}
+    <button class="primary" data-action="w-save">${d.id ? 'Сохранить' : 'Создать кошелёк'}</button>
+    ${d.id ? '<button class="danger" data-action="w-del">Удалить кошелёк</button>' : ''}`;
+  openSheet(body());
+  const upd = () => { const p = $('#wPrev'); if (p) p.innerHTML = preview(); };
+  ctx = {
+    input(e) { if (e.target.id === 'wName') { d.name = e.target.value; upd(); } if (e.target.id === 'wInit') { d.initStr = e.target.value; upd(); } },
+    action(a, el) {
+      if (a === 'w-icon') { d.icon = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
+      if (a === 'w-color') { d.color = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
+      if (a === 'w-cur') { d.currency = el.dataset.v; rerenderSheet(body()); return true; }
+      if (a === 'w-save') {
+        const name = d.name.trim(); if (!name) { toast('Введите название'); $('#wName').focus(); return true; }
+        if (d.id) {
+          const old = getW(d.id);
+          if (old.currency !== d.currency && S.tx.some(t => t.walletId === d.id || t.toWalletId === d.id) && !confirm('В кошельке уже есть операции. Сменить валюту? Суммы останутся теми же числами.')) return true;
+        }
+        const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, currency: d.currency, initial: parseNum(d.initStr) };
+        const i = S.wallets.findIndex(x => x.id === rec.id);
+        if (i >= 0) S.wallets[i] = rec; else S.wallets.push(rec);
+        save(); closeSheet(); render(); toast(d.id ? 'Сохранено' : 'Кошелёк создан');
+        return true;
+      }
+      if (a === 'w-del') {
+        const n = S.tx.filter(t => t.walletId === d.id || t.toWalletId === d.id).length;
+        if (!confirm(n ? `Удалить кошелёк и все его операции (${n})? Это нельзя отменить.` : 'Удалить кошелёк?')) return true;
+        S.wallets = S.wallets.filter(x => x.id !== d.id);
+        S.tx = S.tx.filter(t => t.walletId !== d.id && t.toWalletId !== d.id);
+        if (ui.wallet === d.id) ui.wallet = null;
+        save(); closeSheet(); render(); toast('Удалено');
+        return true;
+      }
+    }
+  };
+}
+
+/* --- категория --- */
+function openCat(c) {
+  const d = c ? { ...c } : { id: null, name: '', icon: '📦', color: COLORS[S.categories.length % COLORS.length], type: ui.ctype };
+  const preview = () => `${ico(d.icon, d.color)}<span>${esc(d.name || 'Название')}</span>`;
+  const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Категория' : 'Новая категория'}</h3><button class="link-btn strong" data-action="c-save">Готово</button></div>
+    <div class="cprev" id="cPrev">${preview()}</div>
+    <div class="lbl">Название</div><input class="input" id="cName" value="${esc(d.name)}" placeholder="Например, Кофе" maxlength="24">
+    <div class="lbl">Иконка</div><div class="emojis">${EMOJI.map(e => `<button class="${e === d.icon ? 'on' : ''}" data-action="c-icon" data-v="${e}">${e}</button>`).join('')}</div>
+    <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(x => `<button class="${x === d.color ? 'on' : ''}" style="--c:${x}" data-action="c-color" data-v="${x}" aria-label="Цвет ${x}"></button>`).join('')}</div>
+    <button class="primary" data-action="c-save">${d.id ? 'Сохранить' : 'Создать категорию'}</button>
+    ${d.id ? '<button class="danger" data-action="c-del">Удалить категорию</button>' : ''}`;
+  openSheet(body());
+  const upd = () => { const p = $('#cPrev'); if (p) p.innerHTML = preview(); };
+  ctx = {
+    input(e) { if (e.target.id === 'cName') { d.name = e.target.value; upd(); } },
+    action(a, el) {
+      if (a === 'c-icon' || a === 'c-color') { d[a === 'c-icon' ? 'icon' : 'color'] = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
+      if (a === 'c-save') {
+        const name = d.name.trim(); if (!name) { toast('Введите название'); $('#cName').focus(); return true; }
+        const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, type: d.type };
+        const i = S.categories.findIndex(x => x.id === rec.id);
+        if (i >= 0) S.categories[i] = rec; else S.categories.push(rec);
+        save(); closeSheet(); render(); toast(d.id ? 'Сохранено' : 'Категория создана');
+        return true;
+      }
+      if (a === 'c-del') {
+        const n = S.tx.filter(t => t.categoryId === d.id).length;
+        if (!confirm(n ? `Удалить категорию? ${n} операций останутся, но будут «Без категории».` : 'Удалить категорию?')) return true;
+        S.categories = S.categories.filter(x => x.id !== d.id); save(); closeSheet(); render(); toast('Удалено');
+        return true;
+      }
+    }
+  };
+}
+
+/* ===== Резервная копия ===== */
+async function exportData() {
+  const name = 'tiyn-' + today() + '.json';
+  const json = JSON.stringify({ ...S, exportedAt: new Date().toISOString() }, null, 2);
+  const file = new File([json], name, { type: 'application/json' });
+  const done = () => { S.lastBackup = Date.now(); save(); render(); };
+  if (navigator.canShare && navigator.canShare({ files: [file] })) {
+    try { await navigator.share({ files: [file], title: 'Тиын: копия данных' }); done(); toast('Копия сохранена'); return; }
+    catch (e) { if (e.name === 'AbortError') return; }
+  }
+  const url = URL.createObjectURL(file);
+  const a = document.createElement('a'); a.href = url; a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  setTimeout(() => URL.revokeObjectURL(url), 3000);
+  done(); toast('Копия сохранена');
+}
+$('#importFile').addEventListener('change', async e => {
+  const f = e.target.files[0]; e.target.value = '';
+  if (!f) return;
+  try {
+    const d = JSON.parse(await f.text());
+    if (!Array.isArray(d.wallets) || !Array.isArray(d.categories) || !Array.isArray(d.tx)) throw new Error('format');
+    const dt = d.exportedAt ? new Date(d.exportedAt) : null;
+    if (!confirm(`Восстановить копию${dt ? ' от ' + dt.getDate() + ' ' + MG[dt.getMonth()] : ''}? Кошельков: ${d.wallets.length}, операций: ${d.tx.length}. Текущие данные будут заменены.`)) return;
+    delete d.exportedAt;
+    S = { ...seed(), ...d }; ui.wallet = null; save(); render(); toast('Данные восстановлены');
+  } catch (err) { alert('Не получилось прочитать файл. Выберите файл копии Тиын в формате .json'); }
+});
+
+/* ===== События ===== */
+document.addEventListener('click', e => {
+  const el = e.target.closest('[data-action]'); if (!el) return;
+  const a = el.dataset.action;
+  if (a === 'close-sheet') return closeSheet();
+  if (ctx && ctx.action && ctx.action(a, el)) return;
+  switch (a) {
+    case 'tab': ui.tab = el.dataset.v; ui.limit = 120; render(); window.scrollTo(0, 0); break;
+    case 'add-tx': openTx(); break;
+    case 'open-tx': openTx(S.tx.find(t => t.id === el.dataset.id)); break;
+    case 'filter': ui.wallet = ui.wallet === el.dataset.id ? null : el.dataset.id; ui.limit = 120; render(); break;
+    case 'more': ui.limit += 120; render(); break;
+    case 'add-wallet': openWallet(); break;
+    case 'edit-wallet': openWallet(getW(el.dataset.id)); break;
+    case 'add-cat': openCat(); break;
+    case 'edit-cat': openCat(S.categories.find(c => c.id === el.dataset.id)); break;
+    case 'ctype': ui.ctype = el.dataset.v; render(); break;
+    case 'stype': ui.stype = el.dataset.v; render(); break;
+    case 'month': ui.month = addMonths(ui.month, +el.dataset.v); render(); break;
+    case 'goto-month': ui.month = el.dataset.v; render(); break;
+    case 'export': exportData(); break;
+    case 'import': $('#importFile').click(); break;
+    case 'reset':
+      if (confirm('Удалить все кошельки, категории и операции? Это нельзя отменить. Сначала стоит сохранить копию.')) { S = seed(); ui.wallet = null; save(); render(); toast('Данные удалены'); }
+      break;
+  }
+});
+document.addEventListener('input', e => { if (ctx && ctx.input) ctx.input(e); });
+document.addEventListener('change', e => { if (ctx && ctx.input && e.target.type === 'date') ctx.input(e); });
+document.addEventListener('keydown', e => { if (e.key === 'Escape' && ctx) closeSheet(); });
+
+render();
+if ('serviceWorker' in navigator && location.protocol === 'https:') navigator.serviceWorker.register('sw.js').catch(() => {});
+if (navigator.storage && navigator.storage.persist) navigator.storage.persist().catch(() => {});
+</script>
+</body>
+</html>
