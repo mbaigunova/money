@@ -282,7 +282,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 /* ===== Константы ===== */
 // Версия приложения: меняется с каждым обновлением
-const APP_VERSION = '2.2';
+const APP_VERSION = '2.3';
 const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
@@ -328,7 +328,7 @@ function dayLabel(ds) {
 function seed() {
   const c = (name, icon, color, type) => ({ id: uid(), name, icon, color, type });
   return {
-    version: 4, base: 'KZT', lastWallet: null, lastBackup: null,
+    version: 5, base: 'KZT', lastWallet: null, lastBackup: null,
     wallets: [
       { id: uid(), name: 'Kaspi Gold', icon: '💳', color: '#C92A2A', currency: 'KZT', initial: 0, group: 'Kaspi', savings: false },
       { id: uid(), name: 'Фридом', icon: '🏦', color: '#1F8656', currency: 'KZT', initial: 0, group: '', savings: false },
@@ -371,10 +371,22 @@ function migrate(d) {
     }
     d.version = 4;
   }
+  if (d.version < 5) {
+    // Добавляем новые кошельки по умолчанию, не трогая существующие
+    const has = re => d.wallets.some(w => re.test(w.name));
+    const add = [];
+    if (!has(/фридом|freedom/i)) add.push({ id: uid(), name: 'Фридом', icon: '🏦', color: '#1F8656', currency: 'KZT', initial: 0, group: '', savings: false });
+    if (!has(/депозит/i)) add.push({ id: uid(), name: 'Депозит', icon: '🐷', color: '#A67C00', currency: 'KZT', initial: 0, group: '', savings: true });
+    if (add.length) {
+      const i = d.wallets.findIndex(w => /наличн/i.test(w.name));
+      if (i >= 0) d.wallets.splice(i, 0, ...add); else d.wallets.push(...add);
+    }
+    d.version = 5;
+  }
   return d;
 }
 function load() {
-  try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); if (d && d.wallets && d.categories && d.tx) return migrate(d); } } catch (e) {}
+  try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); if (d && d.wallets && d.categories && d.tx) { const v = d.version; migrate(d); if (v !== d.version) localStorage.setItem(KEY, JSON.stringify(d)); return d; } } } catch (e) {}
   return seed();
 }
 function save() {
