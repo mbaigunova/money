@@ -259,12 +259,17 @@ button{font:inherit;color:inherit;cursor:pointer}
 [data-long]{-webkit-touch-callout:none;-webkit-user-select:none;user-select:none}
 .wcard.holding{transform:scale(.95)!important;transition:transform .45s ease}
 .row.holding{background:var(--surface-2);transition:background .45s}
-.filter-bar{display:flex;align-items:center;gap:10px;margin:4px 12px 0;padding:10px 10px 10px 12px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);border-left:4px solid var(--c)}
+.filter-bar{margin:4px 12px 0;padding:10px 10px 10px 12px;background:var(--surface);border-radius:16px;box-shadow:var(--shadow);border-left:4px solid var(--c)}
+.fb-row{display:flex;align-items:center;gap:10px}
+.fb-chips{margin:10px -10px 0 -12px;padding:0 10px 0 12px}
+.chip-bal{font:600 12px var(--num);color:var(--muted);margin-left:4px}
+.fb-chips .chip.on .chip-bal{color:var(--ink)}
+.fb-chips .chip.on{background:var(--surface-2)}
 .fb-dot{font-size:18px;line-height:1}
 .fb-txt{flex:1;min-width:0;font-size:14px}
 .fb-txt b{font-weight:600}
 .fb-txt small{display:block;color:var(--muted);font-size:12px;margin-top:1px}
-.filter-bar button{width:34px;height:34px;border:0;border-radius:50%;background:var(--surface-2);color:var(--muted);font-size:15px;flex:none}
+.fb-row > button{width:34px;height:34px;border:0;border-radius:50%;background:var(--surface-2);color:var(--muted);font-size:15px;flex:none}
 #lock{position:fixed;inset:0;z-index:100;background:var(--bg);display:flex;flex-direction:column;align-items:center;justify-content:center;gap:10px;padding:24px;text-align:center}
 #lock[hidden]{display:none}
 #lock img{width:76px;height:76px;border-radius:19px;margin-bottom:6px}
@@ -278,6 +283,21 @@ button{font:inherit;color:inherit;cursor:pointer}
 .lock-intro .big-ico svg{width:34px;height:34px}
 .lock-intro h3{margin:0 0 8px;font:600 19px var(--text)}
 .lock-intro p{margin:0 0 6px;color:var(--muted);font-size:15px}
+.deps-head{display:flex;justify-content:space-between;align-items:baseline;padding:10px 20px 6px}
+.deps-head span{color:var(--muted);font-size:14px}
+.deps-head b{font:600 15px var(--num)}
+.deps{display:flex;gap:8px;overflow-x:auto;padding:2px 20px 8px;scrollbar-width:none}
+.deps::-webkit-scrollbar{display:none}
+.dcard{flex:0 0 auto;min-width:150px;max-width:210px;display:flex;align-items:center;gap:10px;background:var(--surface);border:1.5px solid transparent;border-radius:14px;padding:9px 12px 9px 9px;text-align:left;box-shadow:var(--shadow);transition:opacity .2s}
+.dico{width:30px;height:30px;border-radius:9px;display:grid;place-items:center;font-size:15px;line-height:1;background:var(--c);flex:none}
+.dt{min-width:0}
+.dn{display:block;font-size:13px;font-weight:600;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.db{display:block;font-size:11.5px;color:var(--muted);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.dv{display:block;font:600 13px var(--num);margin-top:2px;white-space:nowrap}
+.dcard.on{border-color:var(--c)}
+.deps.filtering .dcard:not(.on):not(.add),.wallets.filtering + .deps-head + .deps .dcard:not(.on):not(.add){opacity:.5}
+.dcard.add{min-width:auto;border:1.5px dashed var(--line);background:transparent;box-shadow:none;color:var(--muted);font-size:13px;justify-content:center}
+.dcard.holding{transform:scale(.95);transition:transform .45s ease}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -309,7 +329,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 /* ===== Константы ===== */
 // Версия приложения: меняется с каждым обновлением
-const APP_VERSION = '2.6';
+const APP_VERSION = '2.8';
 const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
@@ -468,18 +488,23 @@ function walletCard(w, balance, extra = '') {
   return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
     <span class="w-emoji">${esc(w.icon)}</span>
     <span><span class="w-name" style="display:block">${esc(w.name || 'Кошелёк')}</span>
-    <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span>${w.savings ? `<span class="w-small">Накопления${rateTxt(w)}</span>` : ''}</span>
+    <span class="w-bal" style="display:block">${bal(Math.round(balance), w.currency)}</span>${w.savings ? `<span class="w-small">Накопления${rateTxt(w)}</span>` : ''}</span>
   </button>`;
 }
-function groupCard(u, b) {
+function depCard(w, balance) {
+  const sub = [gname(w), w.interest && w.interest.on && w.interest.rate > 0 ? String(w.interest.rate).replace('.', ',') + '%' : ''].filter(Boolean).map(esc).join(', ');
+  return `<button class="dcard${ui.wallet === w.id ? ' on' : ''}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
+    <span class="dico">${esc(w.icon)}</span><span class="dt"><span class="dn">${esc(w.name)}</span>${sub ? `<span class="db">${sub}</span>` : ''}<span class="dv">${bal(Math.round(balance), w.currency)}</span></span></button>`;
+}
+function groupCard(u, b, on) {
   const ws = u.ws, lead = ws.find(w => !w.savings) || ws[0], cur = lead.currency;
   const sumOf = f => ws.filter(w => f(w) && w.currency === cur).reduce((s, w) => s + b[w.id], 0);
   const spend = sumOf(w => !w.savings), sav = sumOf(w => w.savings), allSav = ws.every(w => w.savings);
-  return `<button class="wcard stack" style="--c:${lead.color};--c2:${tint(lead.color, .5)};--c3:${tint(lead.color, .25)}" data-action="open-group" data-v="${esc(u.group)}" aria-label="Группа ${esc(u.group)}, ${ws.length} ${plural(ws.length, 'счёт', 'счёта', 'счетов')}">
+  return `<button class="wcard stack${on ? ' on' : ''}" style="--c:${lead.color};--c2:${tint(lead.color, .5)};--c3:${tint(lead.color, .25)}" data-action="open-group" data-v="${esc(u.group)}" aria-label="Группа ${esc(u.group)}, ${ws.length} ${plural(ws.length, 'счёт', 'счёта', 'счетов')}">
     <span class="w-count">${ws.length}</span><span class="w-emoji">${esc(lead.icon)}</span>
     <span><span class="w-name" style="display:block">${esc(u.group)}</span>
-    <span class="w-bal" style="display:block">${bal(allSav ? sav : spend, cur)}</span>
-    ${!allSav && sav ? `<span class="w-small">+${money(sav, cur)} отложено</span>` : allSav ? '<span class="w-small">Накопления</span>' : ''}</span>
+    <span class="w-bal" style="display:block">${bal(Math.round(allSav ? sav : spend), cur)}</span>
+    ${!allSav && sav ? `<span class="w-small">+${money(Math.round(sav), cur)} отложено</span>` : allSav ? '<span class="w-small">Накопления</span>' : ''}</span>
   </button>`;
 }
 function txRow(t) {
@@ -526,23 +551,19 @@ function renderHome() {
   let h = `<section class="hero">
     <div class="hero-label">${hasSav ? 'На руках' : 'Всего на счетах'}</div>
     <div class="hero-total">${onHand < 0 ? '−' : ''}${num(onHand)}<span class="cur">${CUR[S.base]}</span></div>
-    ${hasSav ? `<div class="hero-saved">В накоплениях<b>${bal(saved, S.base)}</b></div>` : ''}
     ${others.length ? `<div class="hero-other">${others.map(c => bal(totals[c], c)).join('   ')}</div>` : ''}
     <div class="hero-month">${MN[+ym.slice(5) - 1]}: потрачено <b>${money(me, S.base)}</b>${mi ? `, получено <b class="inc">${money(mi, S.base)}</b>` : ''}</div>
   </section>`;
 
-  if (ui.group) {
-    const ws = groupMembers(ui.group);
-    h += `<div class="gpanel"><div class="gpanel-head"><b>${esc(ui.group)}</b><button class="link-btn" data-action="close-group">Свернуть</button></div>
-      <div class="list">${ws.map(w => `<button class="row${ui.wallet === w.id ? ' sel' : ''}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
-        <span class="ico" style="background:${w.color}">${esc(w.icon)}</span>
-        <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span>${w.savings ? '<span class="row-sub" style="display:block">Накопления</span>' : ''}</span>
-        <span class="amt">${bal(b[w.id], w.currency)}</span></button>`).join('')}</div></div>`;
-  } else {
-    h += `<div class="wallets${ui.wallet ? ' filtering' : ''}">
-      ${units().map(u => u.group ? groupCard(u, b) : walletCard(u.w, b[u.w.id], ui.wallet === u.w.id ? ' on' : '')).join('')}
-      <button class="wcard add" data-action="add-wallet"><span class="plus">+</span>Кошелёк</button>
-    </div>`;
+  const spendW = S.wallets.filter(w => !w.savings), savW = S.wallets.filter(w => w.savings);
+  h += `<div class="wallets${ui.wallet ? ' filtering' : ''}">
+    ${spendW.map(w => walletCard(w, b[w.id], ui.wallet === w.id ? ' on' : '')).join('')}
+    <button class="wcard add" data-action="add-wallet"><span class="plus">+</span>Кошелёк</button>
+  </div>`;
+  if (savW.length) {
+    h += `<div class="deps-head"><span>Накопления</span><b>${bal(saved, S.base)}</b></div>
+      <div class="deps${ui.wallet ? ' filtering' : ''}">${savW.map(w => depCard(w, b[w.id])).join('')}
+      <button class="dcard add" data-action="add-deposit">+ Депозит</button></div>`;
   }
 
   const days = S.lastBackup ? (Date.now() - S.lastBackup) / 864e5 : Infinity;
@@ -553,11 +574,19 @@ function renderHome() {
   const fw = ui.wallet && getW(ui.wallet);
   const ids = fw ? [fw.id] : ui.group ? groupMembers(ui.group).map(w => w.id) : null;
   let list = S.tx.filter(t => !(t.type === 'debt' && !t.walletId) && (!ids || ids.includes(t.walletId) || ids.includes(t.toWalletId))).sort(sortTx);
-  if (fw) h += `<div class="filter-bar" style="--c:${fw.color}"><span class="fb-dot">${esc(fw.icon)}</span>
+  if (ui.group) {
+    const ws = groupMembers(ui.group), lead = ws.find(w => !w.savings) || ws[0];
+    h += `<div class="filter-bar group" style="--c:${lead.color}">
+      <div class="fb-row"><span class="fb-dot">${esc(lead.icon)}</span>
+        <span class="fb-txt">Показаны операции: <b>${esc(fw ? fw.name : ui.group + ', все счета')}</b><small>Удерживайте счёт, чтобы изменить его</small></span>
+        <button data-action="show-all" aria-label="Показать все операции">✕</button></div>
+      <div class="chips fb-chips"><button class="chip${!fw ? ' on' : ''}" style="--c:${lead.color}" data-action="group-all">Все счета</button>
+        ${ws.map(w => `<button class="chip${fw && fw.id === w.id ? ' on' : ''}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">${esc(w.icon)} ${esc(w.name)}<span class="chip-bal">${bal(b[w.id], w.currency)}</span></button>`).join('')}</div>
+    </div>`;
+  } else if (fw) h += `<div class="filter-bar" style="--c:${fw.color}"><div class="fb-row"><span class="fb-dot">${esc(fw.icon)}</span>
       <span class="fb-txt">Показаны операции: <b>${esc(fw.name)}</b><small>Удерживайте карточку, чтобы изменить кошелёк</small></span>
-      <button data-action="show-all" aria-label="Показать все операции">✕</button></div>`;
-  h += `<div class="sec-head"><h2>${fw ? 'Операции' : ui.group ? 'Операции: ' + esc(ui.group) : 'Операции'}</h2>
-    ${!fw && ui.group ? '<button class="link-btn" data-action="close-group">Все</button>' : ''}</div>`;
+      <button data-action="show-all" aria-label="Показать все операции">✕</button></div></div>`;
+  h += `<div class="sec-head"><h2>Операции</h2></div>`;
 
   if (!S.wallets.length) {
     h += `<div class="empty"><div class="big">👛</div><p>Создайте первый кошелёк: карту, наличные или накопления.</p><button class="primary inline" data-action="add-wallet">Создать кошелёк</button></div>`;
@@ -884,9 +913,9 @@ function openTx(t, draft) {
 }
 
 /* --- кошелёк --- */
-function openWallet(w) {
+function openWallet(w, preset = {}) {
   const d = w ? { ...w, initStr: w.initial ? String(w.initial).replace('.', ',') : '' }
-    : { id: null, name: '', icon: '💳', color: COLORS[(S.wallets.length + 1) % COLORS.length], currency: S.base, initStr: '', group: ui.group || '', savings: false };
+    : { id: null, name: '', icon: '💳', color: COLORS[(S.wallets.length + 1) % COLORS.length], currency: S.base, initStr: '', group: '', savings: !!preset.savings, icon: preset.savings ? '🐷' : '💳' };
   d.group = d.group || ''; d.savings = !!d.savings;
   const wi = (w && w.interest) || {};
   d.int = { on: !!wi.on, rateStr: wi.rate ? String(wi.rate).replace('.', ',') : '', day: wi.day || 1 };
@@ -900,7 +929,7 @@ function openWallet(w) {
       <div><div class="lbl">День начисления</div><select class="input" id="wDay">${Array.from({ length: 31 }, (_, i) => `<option value="${i + 1}"${i + 1 === d.int.day ? ' selected' : ''}>${i + 1}-го числа</option>`).join('')}</select></div></div>
       <p class="field-hint" id="wEst">${estTxt()}</p>` : ''}`;
   const groups = [...new Set(S.wallets.map(gname).filter(Boolean))];
-  const groupChips = () => [['', 'Без группы'], ...groups.map(g => [g, g])].map(([v, l]) => `<button class="chip${d.group.trim() === v ? ' on' : ''}" style="--c:var(--accent)" data-action="w-group" data-v="${esc(v)}">${esc(l)}</button>`).join('');
+  const groupChips = () => [['', 'Не указан'], ...groups.map(g => [g, g])].map(([v, l]) => `<button class="chip${d.group.trim() === v ? ' on' : ''}" style="--c:var(--accent)" data-action="w-group" data-v="${esc(v)}">${esc(l)}</button>`).join('');
   const preview = () => `<div class="wcard" style="--c:${d.color}"><span class="w-emoji">${esc(d.icon)}</span><span><span class="w-name" style="display:block">${esc(d.name || 'Название')}</span><span class="w-bal" style="display:block">${bal(parseNum(d.initStr), d.currency)}</span></span></div>`;
   const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Кошелёк' : 'Новый кошелёк'}</h3><button class="link-btn strong" data-action="w-save">Готово</button></div>
     <div class="wprev" id="wPrev">${preview()}</div>
@@ -909,9 +938,9 @@ function openWallet(w) {
     <p class="field-hint">Сколько денег на этом счёте сейчас.</p>
     <div class="lbl">Иконка</div><div id="emojiBox">${emojiBox(d, 'w-icon')}</div>
     <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(c => `<button class="${c === d.color ? 'on' : ''}" style="--c:${c}" data-action="w-color" data-v="${c}" aria-label="Цвет ${c}"></button>`).join('')}</div>
-    <div class="lbl">Группа</div><div class="chips wrap" id="wGroups">${groupChips()}</div>
-    <input class="input" id="wGroup" style="margin-top:8px" value="${groups.includes(d.group.trim()) ? '' : esc(d.group)}" placeholder="Новая группа, например Kaspi" maxlength="24">
-    <p class="field-hint">Счета одной группы на главной собираются в одну карточку.</p>
+    <div class="lbl">Банк</div><div class="chips wrap" id="wGroups">${groupChips()}</div>
+    <input class="input" id="wGroup" style="margin-top:8px" value="${groups.includes(d.group.trim()) ? '' : esc(d.group)}" placeholder="Другой банк, например Halyk" maxlength="24">
+    <p class="field-hint">Название банка показывается под названием депозита.</p>
     <div class="lbl">Тип</div>
     <button class="switch-row" role="switch" aria-checked="${d.savings}" data-action="w-sav"><span class="txt">Накопления<small>Депозит или копилка: не входит в «На руках» и не предлагается при тратах</small></span><span class="sw"></span></button>
     <div id="intBox">${intBox()}</div>
@@ -1430,14 +1459,16 @@ document.addEventListener('click', e => {
     case 'filter': {
       const w = getW(el.dataset.id);
       ui.wallet = ui.wallet === el.dataset.id ? null : el.dataset.id;
-      if (ui.wallet && w && isGroup(gname(w))) ui.group = gname(w);
+      ui.group = null;
       ui.limit = 120; render(); break;
     }
-    case 'show-all': ui.wallet = null; ui.limit = 120; render(); break;
-    case 'open-group': ui.group = el.dataset.v; ui.wallet = null; ui.limit = 120; render(); break;
+    case 'show-all': ui.wallet = null; ui.group = null; ui.limit = 120; render(); break;
+    case 'group-all': ui.wallet = null; ui.limit = 120; render(); break;
+    case 'open-group': if (ui.group === el.dataset.v && !ui.wallet) ui.group = null; else { ui.group = el.dataset.v; ui.wallet = null; } ui.limit = 120; render(); break;
     case 'close-group': ui.group = null; ui.wallet = null; ui.limit = 120; render(); break;
     case 'more': ui.limit += 120; render(); break;
     case 'add-wallet': openWallet(); break;
+    case 'add-deposit': openWallet(null, { savings: true }); break;
     case 'edit-wallet': openWallet(getW(el.dataset.id)); break;
     case 'add-cat': openCat(); break;
     case 'edit-cat': openCat(S.categories.find(c => c.id === el.dataset.id)); break;
