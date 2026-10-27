@@ -186,6 +186,32 @@ button{font:inherit;color:inherit;cursor:pointer}
 .cprev .ico{width:52px;height:52px;font-size:28px;border-radius:16px}
 .field-hint{font-size:12.5px;color:var(--muted);margin:6px 2px 0}
 
+.hero-saved{margin-top:8px;font-size:14px;color:var(--muted)}
+.hero-saved b{font:600 16px var(--num);color:var(--ink);margin-left:4px}
+.wallets{padding-top:14px!important}
+.wcard{height:114px}
+.wcard .w-small{display:block;font-size:11px;opacity:.88;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;position:relative;z-index:1;margin-top:1px}
+.wcard.stack{margin-right:10px;overflow:visible;box-shadow:5px -5px 0 -1px var(--c2),10px -10px 0 -2px var(--c3)}
+.wcard.stack::after,.wcard.stack::before{display:none}
+.wcard .w-count{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.25);border-radius:8px;padding:1px 7px;font-size:12px;font-weight:600;z-index:1}
+.gpanel{margin:0 12px 4px}
+.gpanel-head{display:flex;justify-content:space-between;align-items:center;padding:0 8px 6px}
+.gpanel-head b{font:600 17px var(--text)}
+.row.sel{background:var(--surface-2)}
+.switch-row{display:flex;align-items:center;gap:12px;background:var(--surface);border:1.5px solid var(--line);border-radius:12px;padding:10px 12px;width:100%;text-align:left}
+.switch-row .txt{flex:1;min-width:0}
+.switch-row .txt small{display:block;color:var(--muted);font-size:12.5px;margin-top:1px}
+.sw{width:50px;height:30px;border-radius:15px;background:var(--surface-2);position:relative;flex:none;transition:background .2s}
+.sw::after{content:"";position:absolute;top:3px;left:3px;width:24px;height:24px;border-radius:50%;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.25);transition:transform .2s}
+.switch-row[aria-checked="true"] .sw{background:var(--accent)}
+.switch-row[aria-checked="true"] .sw::after{transform:translateX(20px)}
+.chips.wrap{flex-wrap:wrap;margin:0;padding:0}
+.cats.wrap{grid-auto-flow:row;grid-template-columns:repeat(4,1fr);grid-template-rows:none;grid-auto-columns:auto;margin:0;padding:0}
+.cat.add .ico{background:var(--surface-2);color:var(--accent);font-size:24px}
+.confirm-q{text-align:center;font:600 18px/1.35 var(--text);margin:14px 0 6px}
+.confirm-sub{text-align:center;color:var(--muted);margin:0 0 14px;font-size:15px}
+.primary.red{background:var(--expense);color:#fff}
+.secondary{display:block;width:100%;height:50px;border:0;border-radius:14px;background:var(--surface);color:var(--ink);font:500 16px var(--text);margin-top:8px}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -252,10 +278,10 @@ function dayLabel(ds) {
 function seed() {
   const c = (name, icon, color, type) => ({ id: uid(), name, icon, color, type });
   return {
-    version: 1, base: 'KZT', lastWallet: null, lastBackup: null,
+    version: 2, base: 'KZT', lastWallet: null, lastBackup: null,
     wallets: [
-      { id: uid(), name: 'Kaspi Gold', icon: '💳', color: '#C92A2A', currency: 'KZT', initial: 0 },
-      { id: uid(), name: 'Наличные', icon: '💵', color: '#1F8656', currency: 'KZT', initial: 0 },
+      { id: uid(), name: 'Kaspi Gold', icon: '💳', color: '#C92A2A', currency: 'KZT', initial: 0, group: 'Kaspi', savings: false },
+      { id: uid(), name: 'Наличные', icon: '💵', color: '#1F8656', currency: 'KZT', initial: 0, group: '', savings: false },
     ],
     categories: [
       c('Продукты','🛒','#1F8656','expense'), c('Кафе и рестораны','🍽️','#E8590C','expense'),
@@ -267,13 +293,26 @@ function seed() {
       c('Другое','📦','#2B3A4A','expense'),
       c('Зарплата','💼','#1F8656','income'), c('Подработка','💰','#0B8FA3','income'),
       c('Подарки','🎁','#C2255C','income'), c('Возврат','↩️','#1971C2','income'),
+      c('Проценты','📈','#A67C00','income'),
       c('Другое','📦','#2B3A4A','income'),
     ],
     tx: [],
   };
 }
+function migrate(d) {
+  if (!d.version || d.version < 2) {
+    if (!d.categories.some(c => c.type === 'income' && c.name === 'Проценты')) {
+      const cat = { id: uid(), name: 'Проценты', icon: '📈', color: '#A67C00', type: 'income' };
+      const i = d.categories.findIndex(c => c.type === 'income' && c.name === 'Другое');
+      if (i >= 0) d.categories.splice(i, 0, cat); else d.categories.push(cat);
+    }
+    d.version = 2;
+  }
+  d.wallets.forEach(w => { if (w.group == null) w.group = ''; w.savings = !!w.savings; });
+  return d;
+}
 function load() {
-  try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); if (d && d.wallets && d.categories && d.tx) return d; } } catch (e) {}
+  try { const raw = localStorage.getItem(KEY); if (raw) { const d = JSON.parse(raw); if (d && d.wallets && d.categories && d.tx) return migrate(d); } } catch (e) {}
   return seed();
 }
 function save() {
@@ -281,7 +320,7 @@ function save() {
   catch (e) { toast('Не удалось сохранить данные'); }
 }
 let S = load();
-const ui = { tab: 'home', wallet: null, month: today().slice(0, 7), stype: 'expense', ctype: 'expense', limit: 120 };
+const ui = { tab: 'home', wallet: null, group: null, month: today().slice(0, 7), stype: 'expense', ctype: 'expense', limit: 120 };
 let ctx = null; // контекст открытого окна
 
 const getW = id => S.wallets.find(w => w.id === id);
@@ -300,6 +339,15 @@ function balances() {
   return m;
 }
 const inBase = t => { const w = getW(t.walletId); return w && w.currency === S.base; };
+const gname = w => (w.group || '').trim();
+const groupMembers = g => g ? S.wallets.filter(w => gname(w) === g) : [];
+const isGroup = g => groupMembers(g).length >= 2;
+const plural = (n, a, b, c) => { const m = n % 10, k = n % 100; return m === 1 && k !== 11 ? a : (m >= 2 && m <= 4 && (k < 12 || k > 14)) ? b : c; };
+function units() {
+  const seen = {}, out = [];
+  S.wallets.forEach(w => { const g = gname(w); if (g && isGroup(g)) { if (!seen[g]) { seen[g] = 1; out.push({ group: g, ws: groupMembers(g) }); } } else out.push({ w }); });
+  return out;
+}
 const sortTx = (a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0));
 
 /* ===== Главная ===== */
@@ -307,7 +355,18 @@ function walletCard(w, balance, extra = '') {
   return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}">
     <span class="w-emoji">${esc(w.icon)}</span>
     <span><span class="w-name" style="display:block">${esc(w.name || 'Кошелёк')}</span>
-    <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span></span>
+    <span class="w-bal" style="display:block">${bal(balance, w.currency)}</span>${w.savings ? '<span class="w-small">Накопления</span>' : ''}</span>
+  </button>`;
+}
+function groupCard(u, b) {
+  const ws = u.ws, lead = ws.find(w => !w.savings) || ws[0], cur = lead.currency;
+  const sumOf = f => ws.filter(w => f(w) && w.currency === cur).reduce((s, w) => s + b[w.id], 0);
+  const spend = sumOf(w => !w.savings), sav = sumOf(w => w.savings), allSav = ws.every(w => w.savings);
+  return `<button class="wcard stack" style="--c:${lead.color};--c2:${tint(lead.color, .5)};--c3:${tint(lead.color, .25)}" data-action="open-group" data-v="${esc(u.group)}" aria-label="Группа ${esc(u.group)}, ${ws.length} ${plural(ws.length, 'счёт', 'счёта', 'счетов')}">
+    <span class="w-count">${ws.length}</span><span class="w-emoji">${esc(lead.icon)}</span>
+    <span><span class="w-name" style="display:block">${esc(u.group)}</span>
+    <span class="w-bal" style="display:block">${bal(allSav ? sav : spend, cur)}</span>
+    ${!allSav && sav ? `<span class="w-small">+${money(sav, cur)} отложено</span>` : allSav ? '<span class="w-small">Накопления</span>' : ''}</span>
   </button>`;
 }
 function txRow(t) {
@@ -337,19 +396,33 @@ function renderHome() {
   const ym = today().slice(0, 7);
   let mi = 0, me = 0;
   S.tx.forEach(t => { if (!t.date.startsWith(ym) || !inBase(t)) return; if (t.type === 'expense') me += t.amount; else if (t.type === 'income') mi += t.amount; });
-  const mainTotal = totals[S.base] || 0;
+  const baseW = S.wallets.filter(w => w.currency === S.base);
+  const onHand = baseW.filter(w => !w.savings).reduce((s, w) => s + b[w.id], 0);
+  const saved = baseW.filter(w => w.savings).reduce((s, w) => s + b[w.id], 0);
+  const hasSav = S.wallets.some(w => w.savings);
+  if (ui.group && !isGroup(ui.group)) ui.group = null;
 
   let h = `<section class="hero">
-    <div class="hero-label">Всего на счетах</div>
-    <div class="hero-total">${mainTotal < 0 ? '−' : ''}${num(mainTotal)}<span class="cur">${CUR[S.base]}</span></div>
+    <div class="hero-label">${hasSav ? 'На руках' : 'Всего на счетах'}</div>
+    <div class="hero-total">${onHand < 0 ? '−' : ''}${num(onHand)}<span class="cur">${CUR[S.base]}</span></div>
+    ${hasSav ? `<div class="hero-saved">В накоплениях<b>${bal(saved, S.base)}</b></div>` : ''}
     ${others.length ? `<div class="hero-other">${others.map(c => bal(totals[c], c)).join('   ')}</div>` : ''}
     <div class="hero-month">${MN[+ym.slice(5) - 1]}: потрачено <b>${money(me, S.base)}</b>${mi ? `, получено <b class="inc">${money(mi, S.base)}</b>` : ''}</div>
   </section>`;
 
-  h += `<div class="wallets${ui.wallet ? ' filtering' : ''}">
-    ${S.wallets.map(w => walletCard(w, b[w.id], ui.wallet === w.id ? ' on' : '')).join('')}
-    <button class="wcard add" data-action="add-wallet"><span class="plus">+</span>Кошелёк</button>
-  </div>`;
+  if (ui.group) {
+    const ws = groupMembers(ui.group);
+    h += `<div class="gpanel"><div class="gpanel-head"><b>${esc(ui.group)}</b><button class="link-btn" data-action="close-group">Свернуть</button></div>
+      <div class="list">${ws.map(w => `<button class="row${ui.wallet === w.id ? ' sel' : ''}" data-action="filter" data-id="${w.id}">
+        <span class="ico" style="background:${w.color}">${esc(w.icon)}</span>
+        <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span>${w.savings ? '<span class="row-sub" style="display:block">Накопления</span>' : ''}</span>
+        <span class="amt">${bal(b[w.id], w.currency)}</span></button>`).join('')}</div></div>`;
+  } else {
+    h += `<div class="wallets${ui.wallet ? ' filtering' : ''}">
+      ${units().map(u => u.group ? groupCard(u, b) : walletCard(u.w, b[u.w.id], ui.wallet === u.w.id ? ' on' : '')).join('')}
+      <button class="wcard add" data-action="add-wallet"><span class="plus">+</span>Кошелёк</button>
+    </div>`;
+  }
 
   const days = S.lastBackup ? (Date.now() - S.lastBackup) / 864e5 : Infinity;
   if (S.tx.length >= 10 && days > 14) {
@@ -357,9 +430,10 @@ function renderHome() {
   }
 
   const fw = ui.wallet && getW(ui.wallet);
-  let list = S.tx.filter(t => !fw || t.walletId === fw.id || t.toWalletId === fw.id).sort(sortTx);
-  h += `<div class="sec-head"><h2>${fw ? esc(fw.name) : 'Операции'}</h2>
-    ${fw ? `<span><button class="link-btn" data-action="edit-wallet" data-id="${fw.id}">Изменить</button>&nbsp;&nbsp;<button class="link-btn" data-action="filter" data-id="${fw.id}">Все</button></span>` : ''}</div>`;
+  const ids = fw ? [fw.id] : ui.group ? groupMembers(ui.group).map(w => w.id) : null;
+  let list = S.tx.filter(t => !ids || ids.includes(t.walletId) || ids.includes(t.toWalletId)).sort(sortTx);
+  h += `<div class="sec-head"><h2>${fw ? esc(fw.name) : ui.group ? 'Операции: ' + esc(ui.group) : 'Операции'}</h2>
+    ${fw ? `<span><button class="link-btn" data-action="edit-wallet" data-id="${fw.id}">Изменить</button>&nbsp;&nbsp;<button class="link-btn" data-action="show-all">Все</button></span>` : ui.group ? '<button class="link-btn" data-action="close-group">Все</button>' : ''}</div>`;
 
   if (!S.wallets.length) {
     h += `<div class="empty"><div class="big">👛</div><p>Создайте первый кошелёк: карту, наличные или накопления.</p><button class="primary inline" data-action="add-wallet">Создать кошелёк</button></div>`;
@@ -466,7 +540,7 @@ function renderSettings() {
   <div class="set-group"><div class="list">
     ${S.wallets.map(w => `<button class="row" data-action="edit-wallet" data-id="${w.id}">
       <span class="ico" style="background:${w.color}">${esc(w.icon)}</span>
-      <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span><span class="row-sub" style="display:block">${w.currency}</span></span>
+      <span class="row-main"><span class="row-title" style="display:block">${esc(w.name)}</span><span class="row-sub" style="display:block">${[gname(w), w.savings ? 'накопления' : '', w.currency].filter(Boolean).map(esc).join(', ')}</span></span>
       <span class="amt">${bal(b[w.id], w.currency)}</span></button>`).join('')}
     <button class="row" data-action="add-wallet"><span class="ico add-ico">+</span><span class="row-main"><span class="row-title" style="color:var(--accent)">Добавить кошелёк</span></span></button>
   </div></div>
@@ -479,7 +553,8 @@ function renderSettings() {
     ${cats.map(c => `<button class="row" data-action="edit-cat" data-id="${c.id}">${ico(c.icon, c.color)}
       <span class="row-main"><span class="row-title" style="display:block">${esc(c.name)}</span></span></button>`).join('')}
     <button class="row" data-action="add-cat"><span class="ico add-ico">+</span><span class="row-main"><span class="row-title" style="color:var(--accent)">Добавить категорию</span></span></button>
-  </div></div>
+  </div>
+  <p class="hint">Нажмите на категорию, чтобы переименовать её, сменить иконку или удалить.</p></div>
 
   <div class="sec-head"><h2>Данные</h2></div>
   <div class="set-group"><div class="list">
@@ -517,7 +592,8 @@ function closeSheet(instant) {
     el.classList.remove('show'); setTimeout(() => el.remove(), 300);
   });
   document.body.style.overflow = '';
-  ctx = null;
+  const c = ctx; ctx = null;
+  if (instant !== true && c && c.onCancel) setTimeout(c.onCancel, 0);
 }
 function rerenderSheet(html) {
   const sh = document.querySelector('.sheet.show') || document.querySelector('.sheet');
@@ -532,21 +608,23 @@ function amountView(str, cur) {
   const [i, f] = str.split(',');
   return nf.format(+i || 0) + (f !== undefined ? ',' + f : '') + `<span class="cur">${CUR[cur] || cur}</span>`;
 }
-function walletChips(sel) {
-  return S.wallets.map(w => `<button class="chip${w.id === sel ? ' on' : ''}" style="--c:${w.color}" data-action="pick-wallet" data-id="${w.id}">${esc(w.icon)} ${esc(w.name)}</button>`).join('');
+function walletChips(sel, type) {
+  const list = type === 'expense' ? S.wallets.filter(w => !w.savings || w.id === sel) : S.wallets;
+  if (!list.length) return '<span class="field-hint">Нет кошельков для трат: все отмечены как накопления.</span>';
+  return list.map(w => `<button class="chip${w.id === sel ? ' on' : ''}" style="--c:${w.color}" data-action="pick-wallet" data-id="${w.id}">${esc(w.icon)} ${esc(w.name)}</button>`).join('');
 }
 function txBody(d) {
   const w = getW(d.walletId), cur = w ? w.currency : S.base;
   let mid;
   if (d.type === 'transfer') {
     const to = getW(d.toWalletId), diff = w && to && w.currency !== to.currency;
-    mid = `<div class="lbl">Откуда</div><div class="chips" data-group="from">${walletChips(d.walletId)}</div>
-      <div class="lbl">Куда</div><div class="chips" data-group="to">${walletChips(d.toWalletId)}</div>
+    mid = `<div class="lbl">Откуда</div><div class="chips" data-group="from">${walletChips(d.walletId, 'transfer')}</div>
+      <div class="lbl">Куда</div><div class="chips" data-group="to">${walletChips(d.toWalletId, 'transfer')}</div>
       ${diff ? `<div class="lbl">Зачислено в ${to.currency}</div><input class="input" id="amtTo" inputmode="decimal" value="${esc(d.amountToStr)}" placeholder="Сумма, которая пришла на ${esc(to.name)}">` : ''}`;
   } else {
     const cats = S.categories.filter(c => c.type === d.type);
-    mid = `<div class="lbl">Категория</div><div class="cats">${cats.map(c => `<button class="cat${c.id === d.categoryId ? ' on' : ''}" style="--c:${c.color}" data-action="pick-cat" data-id="${c.id}">${ico(c.icon, c.color)}<span>${esc(c.name)}</span></button>`).join('')}</div>
-      <div class="lbl">Кошелёк</div><div class="chips" data-group="from">${walletChips(d.walletId)}</div>`;
+    mid = `<div class="lbl">Категория</div><div class="cats">${cats.map(c => `<button class="cat${c.id === d.categoryId ? ' on' : ''}" style="--c:${c.color}" data-action="pick-cat" data-id="${c.id}">${ico(c.icon, c.color)}<span>${esc(c.name)}</span></button>`).join('')}<button class="cat add" data-action="new-cat">${'<span class="ico">+</span>'}<span>Новая</span></button></div>
+      <div class="lbl">Кошелёк</div><div class="chips" data-group="from">${walletChips(d.walletId, d.type)}</div>`;
   }
   return `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Операция' : 'Новая операция'}</h3><span></span></div>
     <div class="seg">${[['expense', 'Расход'], ['income', 'Доход'], ['transfer', 'Перевод']].map(([k, l]) => `<button class="${d.type === k ? 'on' : ''}" data-action="tx-type" data-v="${k}">${l}</button>`).join('')}</div>
@@ -557,18 +635,25 @@ function txBody(d) {
     <button class="primary" data-action="tx-save">${d.id ? 'Сохранить' : 'Добавить'}</button>
     ${d.id ? '<button class="danger" data-action="tx-del">Удалить операцию</button>' : ''}`;
 }
-function openTx(t) {
+function spendWallet(pref) {
+  const w = getW(pref); if (w && !w.savings) return w.id;
+  return (S.wallets.find(x => !x.savings) || S.wallets[0]).id;
+}
+function openTx(t, draft) {
   if (!S.wallets.length) { toast('Сначала создайте кошелёк'); return openWallet(); }
-  const def = (S.lastWallet && getW(S.lastWallet)) ? S.lastWallet : (ui.wallet || S.wallets[0].id);
-  const d = t ? { ...t, amountStr: String(t.amount).replace('.', ','), amountToStr: t.amountTo != null ? String(t.amountTo).replace('.', ',') : '', note: t.note || '' }
+  const def = spendWallet(ui.wallet || S.lastWallet);
+  const d = draft ? draft : t ? { ...t, amountStr: String(t.amount).replace('.', ','), amountToStr: t.amountTo != null ? String(t.amountTo).replace('.', ',') : '', note: t.note || '' }
     : { id: null, type: 'expense', amountStr: '0', walletId: def, toWalletId: null, categoryId: null, date: today(), note: '', amountToStr: '' };
   if (!d.toWalletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null;
   openSheet(txBody(d));
+  const selCat = document.querySelector('.sheet .cat.on');
+  if (selCat) selCat.scrollIntoView({ block: 'nearest', inline: 'center' });
   const redraw = () => rerenderSheet(txBody(d));
   ctx = {
     input(e) { if (e.target.id === 'txNote') d.note = e.target.value; if (e.target.id === 'txDate') d.date = e.target.value; if (e.target.id === 'amtTo') d.amountToStr = e.target.value; },
     action(a, el) {
-      if (a === 'tx-type') { d.type = el.dataset.v; d.categoryId = null; if (d.type === 'transfer' && d.toWalletId === d.walletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null; redraw(); return true; }
+      if (a === 'new-cat') { const saved = d; openCat(null, { type: d.type, back: id => { if (id) saved.categoryId = id; openTx(null, saved); } }); return true; }
+      if (a === 'tx-type') { d.type = el.dataset.v; d.categoryId = null; if (d.type === 'expense') d.walletId = spendWallet(d.walletId); if (d.type === 'transfer' && d.toWalletId === d.walletId) d.toWalletId = (S.wallets.find(w => w.id !== d.walletId) || {}).id || null; redraw(); return true; }
       if (a === 'pad') {
         const k = el.dataset.k; let s = d.amountStr;
         if (k === '⌫') s = s.length > 1 ? s.slice(0, -1) : '0';
@@ -619,13 +704,21 @@ function openTx(t) {
 /* --- кошелёк --- */
 function openWallet(w) {
   const d = w ? { ...w, initStr: w.initial ? String(w.initial).replace('.', ',') : '' }
-    : { id: null, name: '', icon: '💳', color: COLORS[(S.wallets.length + 1) % COLORS.length], currency: S.base, initStr: '' };
+    : { id: null, name: '', icon: '💳', color: COLORS[(S.wallets.length + 1) % COLORS.length], currency: S.base, initStr: '', group: ui.group || '', savings: false };
+  d.group = d.group || ''; d.savings = !!d.savings;
+  const groups = [...new Set(S.wallets.map(gname).filter(Boolean))];
+  const groupChips = () => [['', 'Без группы'], ...groups.map(g => [g, g])].map(([v, l]) => `<button class="chip${d.group.trim() === v ? ' on' : ''}" style="--c:var(--accent)" data-action="w-group" data-v="${esc(v)}">${esc(l)}</button>`).join('');
   const preview = () => `<div class="wcard" style="--c:${d.color}"><span class="w-emoji">${esc(d.icon)}</span><span><span class="w-name" style="display:block">${esc(d.name || 'Название')}</span><span class="w-bal" style="display:block">${bal(parseNum(d.initStr), d.currency)}</span></span></div>`;
   const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Кошелёк' : 'Новый кошелёк'}</h3><button class="link-btn strong" data-action="w-save">Готово</button></div>
     <div class="wprev" id="wPrev">${preview()}</div>
     <div class="lbl">Название</div><input class="input" id="wName" value="${esc(d.name)}" placeholder="Например, Kaspi Gold" maxlength="30">
     <div class="lbl">Иконка</div><div class="emojis">${EMOJI.map(e => `<button class="${e === d.icon ? 'on' : ''}" data-action="w-icon" data-v="${e}">${e}</button>`).join('')}</div>
     <div class="lbl">Цвет</div><div class="swatches">${COLORS.map(c => `<button class="${c === d.color ? 'on' : ''}" style="--c:${c}" data-action="w-color" data-v="${c}" aria-label="Цвет ${c}"></button>`).join('')}</div>
+    <div class="lbl">Группа</div><div class="chips wrap" id="wGroups">${groupChips()}</div>
+    <input class="input" id="wGroup" style="margin-top:8px" value="${groups.includes(d.group.trim()) ? '' : esc(d.group)}" placeholder="Новая группа, например Kaspi" maxlength="24">
+    <p class="field-hint">Счета одной группы на главной собираются в одну карточку.</p>
+    <div class="lbl">Тип</div>
+    <button class="switch-row" role="switch" aria-checked="${d.savings}" data-action="w-sav"><span class="txt">Накопления<small>Депозит или копилка: не входит в «На руках» и не предлагается при тратах</small></span><span class="sw"></span></button>
     <div class="lbl">Начальный баланс</div><input class="input" id="wInit" inputmode="decimal" value="${esc(d.initStr)}" placeholder="0">
     <p class="field-hint">Сколько денег в кошельке на момент начала учёта.</p>
     <div class="lbl">Валюта</div><div class="seg">${Object.keys(CUR).map(c => `<button class="${c === d.currency ? 'on' : ''}" data-action="w-cur" data-v="${c}">${c} ${CUR[c]}</button>`).join('')}</div>
@@ -635,10 +728,16 @@ function openWallet(w) {
   openSheet(body());
   const upd = () => { const p = $('#wPrev'); if (p) p.innerHTML = preview(); };
   ctx = {
-    input(e) { if (e.target.id === 'wName') { d.name = e.target.value; upd(); } if (e.target.id === 'wInit') { d.initStr = e.target.value; upd(); } },
+    input(e) {
+      if (e.target.id === 'wName') { d.name = e.target.value; upd(); }
+      if (e.target.id === 'wInit') { d.initStr = e.target.value; upd(); }
+      if (e.target.id === 'wGroup') { d.group = e.target.value; $('#wGroups').innerHTML = groupChips(); }
+    },
     action(a, el) {
       if (a === 'w-icon') { d.icon = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
       if (a === 'w-color') { d.color = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
+      if (a === 'w-group') { d.group = el.dataset.v; $('#wGroup').value = ''; $('#wGroups').innerHTML = groupChips(); return true; }
+      if (a === 'w-sav') { d.savings = !d.savings; el.setAttribute('aria-checked', d.savings); return true; }
       if (a === 'w-cur') { d.currency = el.dataset.v; rerenderSheet(body()); return true; }
       if (a === 'w-save') {
         const name = d.name.trim(); if (!name) { toast('Введите название'); $('#wName').focus(); return true; }
@@ -646,7 +745,7 @@ function openWallet(w) {
           const old = getW(d.id);
           if (old.currency !== d.currency && S.tx.some(t => t.walletId === d.id || t.toWalletId === d.id) && !confirm('В кошельке уже есть операции. Сменить валюту? Суммы останутся теми же числами.')) return true;
         }
-        const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, currency: d.currency, initial: parseNum(d.initStr) };
+        const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, currency: d.currency, initial: parseNum(d.initStr), group: d.group.trim(), savings: d.savings };
         const i = S.wallets.findIndex(x => x.id === rec.id);
         if (i >= 0) S.wallets[i] = rec; else S.wallets.push(rec);
         save(); closeSheet(); render(); toast(d.id ? 'Сохранено' : 'Кошелёк создан');
@@ -658,6 +757,7 @@ function openWallet(w) {
         S.wallets = S.wallets.filter(x => x.id !== d.id);
         S.tx = S.tx.filter(t => t.walletId !== d.id && t.toWalletId !== d.id);
         if (ui.wallet === d.id) ui.wallet = null;
+        if (ui.group && !isGroup(ui.group)) ui.group = null;
         save(); closeSheet(); render(); toast('Удалено');
         return true;
       }
@@ -666,8 +766,8 @@ function openWallet(w) {
 }
 
 /* --- категория --- */
-function openCat(c) {
-  const d = c ? { ...c } : { id: null, name: '', icon: '📦', color: COLORS[S.categories.length % COLORS.length], type: ui.ctype };
+function openCat(c, opts = {}) {
+  const d = c ? { ...c } : { id: null, name: '', icon: '📦', color: COLORS[S.categories.length % COLORS.length], type: opts.type || ui.ctype };
   const preview = () => `${ico(d.icon, d.color)}<span>${esc(d.name || 'Название')}</span>`;
   const body = () => `<div class="sheet-top"><button class="link-btn" data-action="close-sheet">Отмена</button><h3>${d.id ? 'Категория' : 'Новая категория'}</h3><button class="link-btn strong" data-action="c-save">Готово</button></div>
     <div class="cprev" id="cPrev">${preview()}</div>
@@ -679,6 +779,7 @@ function openCat(c) {
   openSheet(body());
   const upd = () => { const p = $('#cPrev'); if (p) p.innerHTML = preview(); };
   ctx = {
+    onCancel: opts.back ? () => opts.back(null) : null,
     input(e) { if (e.target.id === 'cName') { d.name = e.target.value; upd(); } },
     action(a, el) {
       if (a === 'c-icon' || a === 'c-color') { d[a === 'c-icon' ? 'icon' : 'color'] = el.dataset.v; el.parentNode.querySelectorAll('button').forEach(b => b.classList.toggle('on', b === el)); upd(); return true; }
@@ -687,13 +788,39 @@ function openCat(c) {
         const rec = { id: d.id || uid(), name, icon: d.icon, color: d.color, type: d.type };
         const i = S.categories.findIndex(x => x.id === rec.id);
         if (i >= 0) S.categories[i] = rec; else S.categories.push(rec);
-        save(); closeSheet(); render(); toast(d.id ? 'Сохранено' : 'Категория создана');
+        save();
+        if (opts.back) { ctx.onCancel = null; closeSheet(true); opts.back(rec.id); toast('Категория создана'); return true; }
+        closeSheet(); render(); toast(d.id ? 'Сохранено' : 'Категория создана');
         return true;
       }
-      if (a === 'c-del') {
-        const n = S.tx.filter(t => t.categoryId === d.id).length;
-        if (!confirm(n ? `Удалить категорию? ${n} операций останутся, но будут «Без категории».` : 'Удалить категорию?')) return true;
-        S.categories = S.categories.filter(x => x.id !== d.id); save(); closeSheet(); render(); toast('Удалено');
+      if (a === 'c-del') { openCatDelete(getC(d.id)); return true; }
+    }
+  };
+}
+
+function openCatDelete(c) {
+  const used = S.tx.filter(t => t.categoryId === c.id);
+  const sum = used.filter(inBase).reduce((s, t) => s + t.amount, 0);
+  const targets = S.categories.filter(x => x.type === c.type && x.id !== c.id);
+  let target = used.length ? ((targets.find(x => x.name === 'Другое') || targets[0] || {}).id || '') : '';
+  const catBtn = (id, icon, color, name) => `<button class="cat${id === target ? ' on' : ''}" style="--c:${color}" data-action="del-target" data-id="${id}">${ico(icon, color)}<span>${esc(name)}</span></button>`;
+  const body = () => `<div class="sheet-top"><span></span><h3>Удаление</h3><span></span></div>
+    <div class="cprev">${ico(c.icon, c.color)}<span>${esc(c.name)}</span></div>
+    <p class="confirm-q">Удалить категорию «${esc(c.name)}»?</p>
+    ${used.length ? `<p class="confirm-sub">В ней ${used.length} ${plural(used.length, 'операция', 'операции', 'операций')}${sum ? ' на ' + money(sum, S.base) : ''}. Куда их перенести?</p>
+      <div class="cats wrap">${targets.map(x => catBtn(x.id, x.icon, x.color, x.name)).join('')}${catBtn('', NO_CAT.icon, NO_CAT.color, 'Без категории')}</div>`
+      : '<p class="confirm-sub">Операций в ней нет. Удаление нельзя отменить.</p>'}
+    <button class="primary red" data-action="del-confirm">Да, удалить</button>
+    <button class="secondary" data-action="del-cancel">Отмена</button>`;
+  openSheet(body());
+  ctx = {
+    action(a, el) {
+      if (a === 'del-target') { target = el.dataset.id; document.querySelectorAll('.sheet .cat').forEach(b => b.classList.toggle('on', b === el)); return true; }
+      if (a === 'del-cancel') { openCat(c); return true; }
+      if (a === 'del-confirm') {
+        S.tx.forEach(t => { if (t.categoryId === c.id) t.categoryId = target || null; });
+        S.categories = S.categories.filter(x => x.id !== c.id);
+        save(); closeSheet(); render(); toast('Категория удалена');
         return true;
       }
     }
@@ -724,7 +851,7 @@ $('#importFile').addEventListener('change', async e => {
     const dt = d.exportedAt ? new Date(d.exportedAt) : null;
     if (!confirm(`Восстановить копию${dt ? ' от ' + dt.getDate() + ' ' + MG[dt.getMonth()] : ''}? Кошельков: ${d.wallets.length}, операций: ${d.tx.length}. Текущие данные будут заменены.`)) return;
     delete d.exportedAt;
-    S = { ...seed(), ...d }; ui.wallet = null; save(); render(); toast('Данные восстановлены');
+    S = migrate({ ...seed(), ...d }); ui.wallet = null; ui.group = null; save(); render(); toast('Данные восстановлены');
   } catch (err) { alert('Не получилось прочитать файл. Выберите файл копии Тиын в формате .json'); }
 });
 
@@ -738,7 +865,15 @@ document.addEventListener('click', e => {
     case 'tab': ui.tab = el.dataset.v; ui.limit = 120; render(); window.scrollTo(0, 0); break;
     case 'add-tx': openTx(); break;
     case 'open-tx': openTx(S.tx.find(t => t.id === el.dataset.id)); break;
-    case 'filter': ui.wallet = ui.wallet === el.dataset.id ? null : el.dataset.id; ui.limit = 120; render(); break;
+    case 'filter': {
+      const w = getW(el.dataset.id);
+      ui.wallet = ui.wallet === el.dataset.id ? null : el.dataset.id;
+      if (ui.wallet && w && isGroup(gname(w))) ui.group = gname(w);
+      ui.limit = 120; render(); break;
+    }
+    case 'show-all': ui.wallet = null; ui.limit = 120; render(); break;
+    case 'open-group': ui.group = el.dataset.v; ui.wallet = null; ui.limit = 120; render(); break;
+    case 'close-group': ui.group = null; ui.wallet = null; ui.limit = 120; render(); break;
     case 'more': ui.limit += 120; render(); break;
     case 'add-wallet': openWallet(); break;
     case 'edit-wallet': openWallet(getW(el.dataset.id)); break;
@@ -751,7 +886,7 @@ document.addEventListener('click', e => {
     case 'export': exportData(); break;
     case 'import': $('#importFile').click(); break;
     case 'reset':
-      if (confirm('Удалить все кошельки, категории и операции? Это нельзя отменить. Сначала стоит сохранить копию.')) { S = seed(); ui.wallet = null; save(); render(); toast('Данные удалены'); }
+      if (confirm('Удалить все кошельки, категории и операции? Это нельзя отменить. Сначала стоит сохранить копию.')) { S = seed(); ui.wallet = null; ui.group = null; save(); render(); toast('Данные удалены'); }
       break;
   }
 });
