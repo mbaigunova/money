@@ -41,7 +41,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 /* hero */
 .hero{padding:6px 20px 18px}
 .hero-label{color:var(--muted);font-size:14px}
-.hero-total{font:700 clamp(34px,10.5vw,48px)/1.05 var(--num);letter-spacing:-.025em;margin-top:2px;word-break:break-word}
+.hero-total{font:700 clamp(34px,10.5vw,48px)/1.05 var(--num);letter-spacing:-.025em;margin-top:2px;white-space:nowrap}
+.hero-total.lg{font-size:clamp(28px,8.6vw,40px)}
+.hero-total.xl{font-size:clamp(24px,7.2vw,34px)}
 .hero-total .cur,.amount .cur{font-weight:500;color:var(--muted);font-size:.58em;margin-left:.18em}
 .hero-other{margin-top:6px;font:500 15px var(--num);color:var(--muted)}
 .hero-month{margin-top:12px;font-size:15px;color:var(--muted)}
@@ -329,7 +331,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 /* ===== Константы ===== */
 // Версия приложения: меняется с каждым обновлением
-const APP_VERSION = '2.8';
+const APP_VERSION = '2.9';
 const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
@@ -550,7 +552,7 @@ function renderHome() {
 
   let h = `<section class="hero">
     <div class="hero-label">${hasSav ? 'На руках' : 'Всего на счетах'}</div>
-    <div class="hero-total">${onHand < 0 ? '−' : ''}${num(onHand)}<span class="cur">${CUR[S.base]}</span></div>
+    <div class="hero-total${num(onHand).length > 12 ? ' xl' : num(onHand).length > 9 ? ' lg' : ''}">${onHand < 0 ? '−' : ''}${num(onHand)}<span class="cur">${CUR[S.base]}</span></div>
     ${others.length ? `<div class="hero-other">${others.map(c => bal(totals[c], c)).join('   ')}</div>` : ''}
     <div class="hero-month">${MN[+ym.slice(5) - 1]}: потрачено <b>${money(me, S.base)}</b>${mi ? `, получено <b class="inc">${money(mi, S.base)}</b>` : ''}</div>
   </section>`;
