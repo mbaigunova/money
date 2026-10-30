@@ -300,6 +300,9 @@ button{font:inherit;color:inherit;cursor:pointer}
 .deps.filtering .dcard:not(.on):not(.add),.wallets.filtering + .deps-head + .deps .dcard:not(.on):not(.add){opacity:.5}
 .dcard.add{min-width:auto;border:1.5px dashed var(--line);background:transparent;box-shadow:none;color:var(--muted);font-size:13px;justify-content:center}
 .dcard.holding{transform:scale(.95);transition:transform .45s ease}
+.frac{font-size:.68em;font-weight:500;opacity:.85;vertical-align:.32em;letter-spacing:0}
+.wcard .w-bal.sm{font-size:13.5px;letter-spacing:-.02em}
+.wcard:not(.add){flex-basis:146px}
 .toast{position:fixed;left:50%;bottom:calc(env(safe-area-inset-bottom,0px) + 150px);transform:translate(-50%,16px);opacity:0;background:var(--ink);color:var(--bg);padding:10px 16px;border-radius:12px;font-size:14px;font-weight:500;transition:opacity .2s,transform .2s;z-index:70;pointer-events:none;white-space:nowrap}
 .toast.show{opacity:1;transform:translate(-50%,0)}
 </style>
@@ -323,7 +326,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <div id="lock" hidden>
   <img src="icon-192.png" alt="">
   <h2>Тиын заблокирован</h2>
-  <p id="lockMsg">Разблокируйте с помощью Face ID</p>
+  <p id="lockMsg">Коснитесь экрана, чтобы разблокировать</p>
   <button class="primary inline lock-btn" id="lockBtn"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.9" stroke-linecap="round" stroke-linejoin="round"><path d="M4 8V6a2 2 0 0 1 2-2h2M16 4h2a2 2 0 0 1 2 2v2M20 16v2a2 2 0 0 1-2 2h-2M8 20H6a2 2 0 0 1-2-2v-2"/><path d="M9 9v1.5M15 9v1.5M12 9v4h-1"/><path d="M9 15.5c1.7 1.3 4.3 1.3 6 0"/></svg>Разблокировать</button>
   <button class="link-btn lock-help" id="lockHelp">Не получается войти?</button>
 </div>
@@ -331,7 +334,7 @@ button{font:inherit;color:inherit;cursor:pointer}
 <script>
 /* ===== Константы ===== */
 // Версия приложения: меняется с каждым обновлением
-const APP_VERSION = '2.9';
+const APP_VERSION = '2.11';
 const APP_DATE = '2026-10-27';
 const KEY = 'tiyn-v1';
 const CUR = { KZT:'₸', USD:'$', EUR:'€', RUB:'₽' };
@@ -486,17 +489,21 @@ const rateTxt = w => (w.savings && w.interest && w.interest.on && w.interest.rat
 const sortTx = (a, b) => (b.date.localeCompare(a.date)) || ((b.createdAt || 0) - (a.createdAt || 0));
 
 /* ===== Главная ===== */
+function balCard(n, cur) {
+  const c = Math.round(Math.abs(n) * 100), i = Math.floor(c / 100), f = c % 100;
+  return (n < 0 ? '−' : '') + nf.format(i) + (f ? `<span class="frac">,${pad2(f)}</span>` : '') + '\u00a0' + (CUR[cur] || cur);
+}
 function walletCard(w, balance, extra = '') {
   return `<button class="wcard${extra}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
     <span class="w-emoji">${esc(w.icon)}</span>
     <span><span class="w-name" style="display:block">${esc(w.name || 'Кошелёк')}</span>
-    <span class="w-bal" style="display:block">${bal(Math.round(balance), w.currency)}</span>${w.savings ? `<span class="w-small">Накопления${rateTxt(w)}</span>` : ''}</span>
+    <span class="w-bal${nf.format(Math.floor(Math.abs(balance))).length > 6 ? ' sm' : ''}" style="display:block">${balCard(balance, w.currency)}</span>${w.savings ? `<span class="w-small">Накопления${rateTxt(w)}</span>` : ''}</span>
   </button>`;
 }
 function depCard(w, balance) {
   const sub = [gname(w), w.interest && w.interest.on && w.interest.rate > 0 ? String(w.interest.rate).replace('.', ',') + '%' : ''].filter(Boolean).map(esc).join(', ');
   return `<button class="dcard${ui.wallet === w.id ? ' on' : ''}" style="--c:${w.color}" data-action="filter" data-id="${w.id}" data-long="${w.id}">
-    <span class="dico">${esc(w.icon)}</span><span class="dt"><span class="dn">${esc(w.name)}</span>${sub ? `<span class="db">${sub}</span>` : ''}<span class="dv">${bal(Math.round(balance), w.currency)}</span></span></button>`;
+    <span class="dico">${esc(w.icon)}</span><span class="dt"><span class="dn">${esc(w.name)}</span>${sub ? `<span class="db">${sub}</span>` : ''}<span class="dv">${balCard(balance, w.currency)}</span></span></button>`;
 }
 function groupCard(u, b, on) {
   const ws = u.ws, lead = ws.find(w => !w.savings) || ws[0], cur = lead.currency;
@@ -731,7 +738,11 @@ function renderSettings() {
   <div class="set-group"><div class="list">
     <button class="switch-row" style="border:0;border-radius:0;padding:11px 14px" role="switch" aria-checked="${!!LK.on}" data-action="lock-toggle" ${FACE_OK ? '' : 'disabled'}>
       ${ico('🔒', '#2B3A4A')}<span class="txt" style="margin-left:0">Вход по Face ID<small>${FACE_OK ? 'Приложение попросит Face ID при открытии' : 'Недоступно на этом устройстве или в этом браузере'}</small></span><span class="sw"></span></button>
-  </div></div>
+  </div>
+  ${LK.on ? `<div class="lbl" style="margin:12px 8px 6px">Снова просить Face ID, если приложение было свёрнуто</div>
+  <div class="seg">${[[1, '1 мин'], [5, '5 мин'], [15, '15 мин'], [0, 'Никогда']].map(([v, l]) => `<button class="${(LK.after == null ? 1 : LK.after) === v ? 'on' : ''}" data-action="lock-after" data-v="${v}">${l}</button>`).join('')}</div>
+  <p class="hint">${(LK.after == null ? 1 : LK.after) === 0 ? 'Face ID понадобится только при новом запуске приложения, после закрытия свайпом вверх.' : 'При каждом новом запуске Face ID нужен всегда.'}</p>` : ''}
+  </div>
   <div class="sec-head"><h2>Данные</h2></div>
   <div class="set-group"><div class="list">
     <button class="row" data-action="export">${ico('💾', '#0B8FA3')}<span class="row-main"><span class="row-title" style="display:block">Сохранить копию</span>
@@ -1328,12 +1339,15 @@ async function enableLock() {
   try { LK.id = await createKey(); LK.on = true; LK.asked = true; saveLock(); toast('Face ID включён'); return true; }
   catch (e) { toast('Face ID не включён'); return false; }
 }
-function showLock() { const l = $('#lock'); if (!l.hidden) return; $('#lockMsg').textContent = 'Разблокируйте с помощью Face ID'; l.hidden = false; }
+function showLock() { const l = $('#lock'); if (!l.hidden) return; $('#lockMsg').textContent = 'Коснитесь экрана, чтобы разблокировать'; l.hidden = false; }
+let unlocking = false;
 async function tryUnlock(auto) {
+  if (unlocking) return; unlocking = true;
   try { await verifyKey(); $('#lock').hidden = true; }
-  catch (e) { if (!auto) $('#lockMsg').textContent = 'Не удалось разблокировать. Нажмите кнопку ещё раз.'; }
+  catch (e) { if (!auto) $('#lockMsg').textContent = 'Не удалось разблокировать. Коснитесь экрана ещё раз.'; }
+  finally { unlocking = false; }
 }
-$('#lockBtn').addEventListener('click', () => tryUnlock(false));
+$('#lock').addEventListener('click', e => { if (e.target.closest('#lockHelp')) return; tryUnlock(false); });
 $('#lockHelp').addEventListener('click', async () => {
   if (!confirm('Создать новый ключ Face ID? Это нужно, если ключ был удалён из «Паролей». iPhone попросит Face ID или код-пароль.')) return;
   try { LK.id = await createKey(); saveLock(); $('#lock').hidden = true; toast('Новый ключ создан'); }
@@ -1342,7 +1356,8 @@ $('#lockHelp').addEventListener('click', async () => {
 document.addEventListener('visibilitychange', () => {
   if (document.hidden) { hiddenAt = Date.now(); return; }
   runInterest();
-  if (LK.on && LK.id && hiddenAt && Date.now() - hiddenAt > 60000) { showLock(); tryUnlock(true); }
+  const after = LK.after == null ? 1 : LK.after; // минуты; 0 — только при запуске
+  if (LK.on && LK.id && after > 0 && hiddenAt && Date.now() - hiddenAt > after * 60000) { showLock(); tryUnlock(true); }
 });
 function offerLock() {
   if (LK.on || LK.asked || !FACE_OK || ctx || !$('#lock').hidden) return;
@@ -1484,6 +1499,7 @@ document.addEventListener('click', e => {
       if (!LK.on) enableLock().then(() => render());
       else verifyKey().then(() => { LK.on = false; saveLock(); render(); toast('Face ID выключен'); }).catch(() => toast('Чтобы выключить, подтвердите Face ID'));
       break;
+    case 'lock-after': LK.after = +el.dataset.v; saveLock(); render(); break;
     case 'export': exportData(); break;
     case 'import': $('#importFile').click(); break;
     case 'reset':
